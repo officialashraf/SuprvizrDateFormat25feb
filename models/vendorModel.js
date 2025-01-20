@@ -17,7 +17,7 @@ const vendorSchema = new mongoose.Schema({
     },
     role: { 
         type: String,
-         default: 'employee'
+         default: 'vendor'
      },
     vendorCompany: {
         type: String,

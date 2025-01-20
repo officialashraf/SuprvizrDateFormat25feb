@@ -67,7 +67,7 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
 
             await sendEmployeeMsg(mobile);
 
-            res.status(201).json({ message: 'Employee added successfully' });
+            res.status(201).json({ message: 'Employee added successfully', id:newUser._id });
         } catch (error) {
             console.error(error);
             res.status(500).json({ message: 'Internal Server Error' });
@@ -233,113 +233,267 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
     };
 
     //employee Login
-    export const employeeLogin = async (req, res) => {
+    // export const employeeLogin = async (req, res) => {
 
+    //     try {
+    //         const { mobileNumber } = req.body;
+
+    //         const mobileNumberRegex = /^\d{10}$/;
+
+    //         if (!mobileNumberRegex.test(mobileNumber)) {
+    //             return res.status(400).json({ error: 'Enter a valid 10-digit mobile number' });
+    //         }
+
+    //         const employee = await employeeModel.findOne({ mobile: mobileNumber });
+    //         const otpCode = await generateOTP();
+    //         // const otpCode = "1234";
+
+    //         if (!employee) {
+
+    //             return res.status(404).json({ message: 'Mobile number not found in database.' });
+
+    //         } else {
+
+    //             const userId = employee._id;
+    //             const update = { otp: otpCode };
+
+    //             const result = await employeeModel.updateOne({ _id: userId }, update);
+
+    //             if (result.matchedCount === 1) {
+
+    //                await sendOTP(mobileNumber, otpCode);
+
+    //                 console.log('OTP updated successfully',sendOTP());
+
+    //             } else {
+
+    //                 console.log('employee not found or OTP not updated');
+    //             }
+
+    //             res.status(200).json({ message: 'Otp sent successfully!', otp: otpCode });
+
+
+    //         }
+    //     } catch (error) {
+    //         console.error(error);
+    //         res.status(500).json({ message: 'Internal Server Error', error });
+    //     }
+
+    // };
+
+    export const employeeLogin = async (req, res) => {
         try {
             const { mobileNumber } = req.body;
-
             const mobileNumberRegex = /^\d{10}$/;
-
+    
+            // Validate mobile number
             if (!mobileNumberRegex.test(mobileNumber)) {
                 return res.status(400).json({ error: 'Enter a valid 10-digit mobile number' });
             }
-
-            const employee = await employeeModel.findOne({ mobile: mobileNumber });
+    
+            // Check if the mobile number exists in vendor or employee model
+            const existingVendor = await vendorModel.findOne({ vendorMobile: mobileNumber });
+            const existingEmployee = await employeeModel.findOne({ mobile: mobileNumber });
+           
             const otpCode = await generateOTP();
-            // const otpCode = "1234";
-
-            if (!employee) {
-
-                return res.status(404).json({ message: 'Mobile number not found in database.' });
-
-            } else {
-
-                const userId = employee._id;
-                const update = { otp: otpCode };
-
-                const result = await employeeModel.updateOne({ _id: userId }, update);
-
-                if (result.matchedCount === 1) {
-
-                    await sendOTP(mobileNumber, otpCode);
-
-                    console.log('OTP updated successfully');
-
-                } else {
-
-                    console.log('employee not found or OTP not updated');
+    
+            const currentDateIST = moment.tz('Asia/Kolkata').startOf('day').format('YYYY-MM-DD');
+            const futureDateIST = moment.tz('Asia/Kolkata').startOf('day').add(15, 'days').format('YYYY-MM-DD');
+    
+            if (existingVendor) {
+                // Vendor login
+                if (!existingVendor.subEndDate) {
+                    existingVendor.subStartDate = currentDateIST;
+                    existingVendor.subEndDate = futureDateIST;
                 }
-
-                res.status(200).json({ message: 'Otp sent successfully!', otp: otpCode });
-
+    
+                existingVendor.vandorOtp = otpCode;
+                await existingVendor.save();
+    
+                // Send OTP
+                await sendOTP(mobileNumber, otpCode);
+                return res.status(200).json({ message: 'Vendor login successful, OTP sent', otp: otpCode ,type :existingVendor.role});
+    
+            } else if (existingEmployee) {
+                // Employee login
+                //await employeeModel.updateOne({  otp: otpCode });
+                existingEmployee.otp = otpCode;
+                await existingEmployee.save()
+              
+                await sendOTP(mobileNumber, otpCode);  // Send OTP for employee login
+            
+                return res.status(200).json({ message: 'Employee login successful, OTP sent', otp: otpCode, type: existingEmployee.role });
+    
+            } else {
+                // Vendor registration and login
+                const currentDateTimeIST = moment.tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
+    
+                const newVendor = new vendorModel({
+                    vendorMobile: mobileNumber,
+                    vandorOtp: otpCode,
+                    vandorCreated: currentDateTimeIST,
+                    subStartDate: currentDateIST,
+                    subEndDate: futureDateIST
+                });
+    
+                await newVendor.save();
+    
+                // Send OTP
+                await sendOTP(mobileNumber, otpCode);
+                return res.status(201).json({ message: 'Vendor registered and OTP sent', otp: otpCode, type: newVendor.role  });
             }
+    
         } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: 'Internal Server Error', error });
+            console.error('Error in loginOrRegister:', error);
+            res.status(500).json({ message: 'Internal Server Error', error: error.message });
         }
-
     };
-
-    //verify otp
+    
     export const verifyOTP = async (req, res) => {
         try {
             const { otp, mobile } = req.body;
-
-
+    
             if (!otp || !mobile) {
                 return res.status(400).json({ error: 'One or more fields are empty' });
             }
-
-            const storedOTP = await employeeModel.findOne({ mobile });
-
-            if (!storedOTP) {
+    
+            // Check if the mobile number exists in employee or vendor model
+            let user = await employeeModel.findOne({ mobile });
+            //let userType = 'employee'; // Default user type
+    
+            if (!user) {
+                user = await vendorModel.findOne({ vendorMobile: mobile });
+                // userType = 'vendor';
+            }
+    
+            if (!user) {
                 return res.status(400).json({ message: 'Mobile Number Not Found' });
             }
-
-            if (otp !== storedOTP.otp) {
+    
+            // Verify OTP
+            const storedOTP = user.role === 'employee' ? user.otp : user.vandorOtp;
+            if (otp !== storedOTP) {
                 return res.status(400).json({ message: 'Invalid OTP' });
             }
-
+    
+            // Additional checks for vendor
+            if (user.role === 'vendor') {
+                if (!user.subEndDate) {
+                    return res.status(400).json({ message: "You don't have any subscription. Please contact the administrator" });
+                }
+    
+                if (user.status === 'inactive') {
+                    return res.status(400).json({ message: 'Your account is currently inactive. Please contact the administrator' });
+                }
+    
+                const currentDateIST = moment.tz('Asia/Kolkata').startOf('day');
+                const subscriptionEndDate = moment(user.subEndDate).startOf('day');
+    
+                if (currentDateIST > subscriptionEndDate) {
+                    return res.status(400).json({ message: 'Your subscription has expired. Please contact the administrator' });
+                }
+            }
+    
             // Payload for JWT
             const payload = {
-                userId: storedOTP._id,
-                userRole: storedOTP.role, // Ensure role is stored in DB  
+                userId: user._id,
+                userRole: user.role || userType, // Ensure role is present, fallback to userType
             };
-
+    
             // Generate JWT token
-            const token = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '14d' }); // Secret key must match
-            console.log(token)
-            res.status(200).json({
+            const token = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '14d' });
+    
+            console.log(token);
+    
+            // Return success response
+            return res.status(200).json({
                 message: 'OTP verification successful',
                 token, // Send token in response
-                employee: storedOTP,
+                user,
             });
-        }
-
-
-        // //update user status
-        // const filter = { mobile: mobile };
-        // const update = { status: 1 };
-
-        // try {
-        //     const result = await employeeModel.updateOne(filter, update);
-        //     console.log(result.matchedCount === 1 ? 'Status updated successfully' : 'Error in Status updating!');
-        // } catch (error) {
-        //     console.error('Error updating OTP:', error);
-        // }
-
-        // // Generate a JWT token
-        // const token = jwt.sign({ userId: storedOTP._id, mobile: storedOTP.mobile }, 'yourSecretKey', {
-        //     expiresIn: '1h', // Token expiration time
-        // });
-
-
-
-        catch (error) {
+    
+        } catch (error) {
             console.error(error);
-            res.status(500).json({ message: 'Failed to verify OTP' });
+            return res.status(500).json({ message: 'Failed to verify OTP', details: error.message });
         }
     };
+    
+
+      // if (result.matchedCount === 1 && result.modifiedCount === 1) {
+                //     try {
+                //         const otpResponse = await sendOTP(mobileNumber, otpCode);
+                //         console.log('OTP sent successfully!!!', otpResponse);
+                //         res.status(200).json({ message: 'Otp sent successfully!', otp: otpCode });
+                //     } catch (error) {
+                //         console.error('Error sending OTP:', error);
+                //         return res.status(500).json({ message: 'Failed to send OTP', error });
+                //     }
+                // } else {
+                //     console.log('OTP not updated in database');
+                //     return res.status(500).json({ message: 'Failed to update OTP in database' });
+                // }
+
+    //verify otp
+    // export const verifyOTP = async (req, res) => {
+    //     try {
+    //         const { otp, mobile } = req.body;
+
+
+    //         if (!otp || !mobile) {
+    //             return res.status(400).json({ error: 'One or more fields are empty' });
+    //         }
+
+    //         const storedOTP = await employeeModel.findOne({ mobile });
+
+    //         if (!storedOTP) {
+    //             return res.status(400).json({ message: 'Mobile Number Not Found' });
+    //         }
+
+    //         if (otp !== storedOTP.otp) {
+    //             return res.status(400).json({ message: 'Invalid OTP' });
+    //         }
+
+    //         // Payload for JWT
+    //         const payload = {
+    //             userId: storedOTP._id,
+    //             userRole: storedOTP.role, // Ensure role is stored in DB  
+    //         };
+
+    //         // Generate JWT token
+    //         const token = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '14d' }); // Secret key must match
+    //         console.log(token)
+    //         res.status(200).json({
+    //             message: 'OTP verification successful',
+    //             token, // Send token in response
+    //             employee: storedOTP,
+    //         });
+    //     }
+
+
+    //     // //update user status
+    //     // const filter = { mobile: mobile };
+    //     // const update = { status: 1 };
+
+    //     // try {
+    //     //     const result = await employeeModel.updateOne(filter, update);
+    //     //     console.log(result.matchedCount === 1 ? 'Status updated successfully' : 'Error in Status updating!');
+    //     // } catch (error) {
+    //     //     console.error('Error updating OTP:', error);
+    //     // }
+
+    //     // // Generate a JWT token
+    //     // const token = jwt.sign({ userId: storedOTP._id, mobile: storedOTP.mobile }, 'yourSecretKey', {
+    //     //     expiresIn: '1h', // Token expiration time
+    //     // });
+
+
+
+    //     catch (error) {
+    //         console.error(error);
+    //         res.status(500).json({ message: 'Failed to verify OTP' });
+    //     }
+    // };
+
     //verify otp with latlong 
     // verifyOTP = async (req, res) => {
     //     try {
@@ -555,7 +709,14 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
             }
 
             // const attendance = await attendanceModel.find({ userId: userId }, '-attnedanceAddress').sort({ attnedanceDate: 1 });
-            const attendance = await attendanceModel.find({ userId: userId, createdAt: filterDate }, '-attnedanceAddress').sort({ attnedanceDate: 1 });
+           // const attendance = await attendanceModel.find({ userId: userId, createdAt: filterDate }, '-attnedanceAddress').sort({ attnedanceDate: 1 });
+           const attendance = await attendanceModel.find({ userId: userId
+           , createdAt: filterDate
+             },
+            '-attnedanceAddress').sort({ attnedanceDate: 1 }
+            );
+
+           console.log("attendancelog", attendance)
             const tasks = await taskModel.find({ userId, status: 1 }, '-taskAddress');
             const taskCount = tasks.length; // Count of tasks
 
@@ -566,10 +727,12 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
 
             const getCheckInOrigin = await attendanceModel.find({ userId: userId, status: "IN" }).sort({ attnedanceDate: -1 }).limit(1);
             const getCheckOutOrigin = await attendanceModel.find({ userId: userId, status: "OUT" }).sort({ attnedanceDate: -1 }).limit(1);
-
+console.log("getCheckInOrigin",getCheckInOrigin)
+console.log('getCheckOutOrigin',getCheckOutOrigin)
             const checkInRecord = attendance.find(record => record.status === "IN");
             const checkOutRecord = attendance.find(record => record.status === "OUT");
-
+console.log("checkinrecor", checkInRecord)
+console.log("checkOutRecord", checkOutRecord)
 
             // Calculate distance and duration for single task
 
@@ -644,7 +807,8 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
                 for (let i = 0; i < tasks.length; i++) {
                     const task = tasks[i];
                     const taskLocation = task.location;
-
+                         console.log("task",tasks.location)
+                         console.log("taskLocation",taskLocation.coordinates)
                     if (i === 0) {
                         // Save the start task coordinates
                         startTaskLat = taskLocation.coordinates[0];
@@ -657,6 +821,9 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
 
                     const originLat = (i === 0) ? checkInRecord.attnedanceLat : tasks[i - 1].location.coordinates[0];
                     const originLong = (i === 0) ? checkInRecord.attnedanceLong : tasks[i - 1].location.coordinates[1];
+                    console.log("originLat",originLat)
+                    console.log("originLong",originLong)
+                    
                     const destinationLat = taskLocation.coordinates[0];
                     const destinationLong = taskLocation.coordinates[1];
 
@@ -664,16 +831,30 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
                     const locationOutLatLong = destinationLat + ',' + destinationLong;
 
                     const originCoords = await parseCoordinates(locationInLatLong);
+                    console.log("originCoords",originCoords)
                     const destinationCoords = await parseCoordinates(locationOutLatLong);
-
+                    console.log("destinationCoords",destinationCoords)
                     const result = await calculateDistanceAndDuration(originCoords, destinationCoords);
 
-                    totalDistance += parseFloat(result.data.rows[0].elements[0].distance.text);
-                    totalDuration += parseFloat(result.data.rows[0].elements[0].duration.text);
+                    console.log("result.data",result); // Check if rows and elements are defined
+                    if (result.data && result.data.distance && result.data.duration) {
+                         // Parse the distance and duration from the result
+                         const distanceText = result.data.distance.replace(' km', ''); // Remove the ' km' part 
+                          const durationText = result.data.duration.replace(' mins', ''); // Remove the ' mins' part
+                           totalDistance += parseFloat(distanceText); 
+                           totalDuration += parseFloat(durationText); 
+                        } else {
+                             console.error('Error: Invalid API response structure'); 
+                        }
+
+                    // totalDistance += parseFloat(result.data.rows[0].elements[0].distance.text);
+                    // totalDuration += parseFloat(result.data.rows[0].elements[0].duration.text);
                 }
 
                 // If there's a check-out record, calculate distance and duration from last task to check-out
                 if (checkOutRecord) {
+
+                    
                     const originLat = endTaskLat;
                     const originLong = endTaskLong;
                     const destinationLat = checkOutRecord.attnedanceLat;
@@ -687,8 +868,18 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
 
                     const result = await calculateDistanceAndDuration(originCoords, destinationCoords);
 
-                    totalDistance += parseFloat(result.data.rows[0].elements[0].distance.text);
-                    totalDuration += parseFloat(result.data.rows[0].elements[0].duration.text);
+                    if (result.data && result.data.distance && result.data.duration) {
+                        // Parse the distance and duration from the result
+                        const distanceText = result.data.distance.replace(' km', ''); // Remove the ' km' part 
+                         const durationText = result.data.duration.replace(' mins', ''); // Remove the ' mins' part
+                          totalDistance += parseFloat(distanceText); 
+                          totalDuration += parseFloat(durationText); 
+                       } else {
+                            console.error('Error: Invalid API response structure'); 
+                       }
+
+                    // totalDistance += parseFloat(result.data.rows[0].elements[0].distance.text);
+                    // totalDuration += parseFloat(result.data.rows[0].elements[0].duration.text);
                 }
             }
 
@@ -841,57 +1032,262 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
 
     };
 
+    // export const trackEmpRecord = async (req, res) => {
+    //     try {
+    //         const { userId, filterDate, page, perPage } = req.body;
+    //         const currentPage = parseInt(page) || 1;
+    //         const itemsPerPage = parseInt(perPage) || 10; // Default to 10 items per page
+
+    //         if (!userId) {
+    //             return res.status(400).json({ error: 'User id is empty' });
+    //         }
+
+    //         const employee = await employeeModel.findById(userId, '-otp');
+
+    //         if (!employee) {
+    //             return res.status(404).json({ error: 'Employee not found' });
+    //         }
+
+    //         let query = { userId: userId };
+
+    //         // task count
+    //         let query2 = { userId: userId, status: 1 };
+
+    //         if (filterDate) {
+    //             const startDate = new Date(filterDate);
+    //             startDate.setUTCHours(0, 0, 0, 0); // Set to the start of the day
+    //             const endDate = new Date(filterDate);
+    //             endDate.setUTCHours(23, 59, 59, 999); // Set to the end of the day
+
+    //             query.createdAt = {
+    //                 $gte: startDate,
+    //                 $lt: endDate
+    //             };
+
+    //             query2.taskEndDate = {
+    //                 $gte: startDate,
+    //                 $lt: endDate
+    //             };
+
+    //         }
+
+    //         const tasksCount = await taskModel.find(query2, '-taskAddress');
+    //         const taskCount = tasksCount.length; // Count of tasks
+    //         // task count
+
+
+    //         const totalCount = await trackModel.countDocuments(query); // Total count of documents
+
+    //         const trackData = await trackModel.find(query)
+    //             .sort({ createdAt: 1 })
+    //             .skip((currentPage - 1) * itemsPerPage)
+    //             .limit(itemsPerPage);
+
+    //         if (!trackData || trackData.length === 0) {
+    //             return res.status(404).json({
+    //                 message: "No Data Found", response: {
+    //                     employee, track: [], origin: { distance: 0, duration: 0, taskCount: 0 }, totalCount: 0, pagination: {
+    //                         filterDate: filterDate,
+    //                         totalCount: 0,
+    //                         totalPages: 0,
+    //                         currentPage: 0,
+    //                         perPage: 0
+    //                     }
+    //                 }
+    //             });
+    //         }
+
+    //         let mergedDetails = [];
+
+    //         for (let i = 0; i < trackData.length; i++) {
+    //             const trackd = trackData[i];
+    //             const userType = trackd.userType;
+    //             const userId = trackd.userId;
+    //             const status = trackd.status;
+    //             const taskId = trackd.taskId;
+    //             const attendceId = trackd.attendceId;
+    //             const internetId = trackd.internetId;
+    //             const gpsId = trackd.gpsId;
+    //             const loginId = trackd.loginId;
+    //             const logoutId = trackd.logoutId;
+
+    //             if (userId && userType === 'employee' && attendceId != '0') {
+    //                 const attDetailIn = await attendanceModel.findOne({ _id: attendceId });
+    //                 if (attDetailIn) {
+    //                     mergedDetails.push(attDetailIn);
+    //                 }
+    //             }
+
+    //             if (taskId && taskId != '0') {
+    //                 const taskData = await taskModel.findOne({ _id: taskId });
+
+    //                 if (taskData) {
+    //                     const formattedTask = {
+    //                         ...taskData.toObject(),
+    //                         taskDate: moment(taskData.taskDate).format('YYYY-MM-DD hh:mm A'),
+    //                         taskEndDate: (taskData.taskEndDate != null && taskData.taskEndDate != '') ? moment(taskData.taskEndDate).format('YYYY-MM-DD hh:mm A') : ''
+    //                     };
+
+    //                     mergedDetails.push(formattedTask);
+    //                 }
+    //             }
+
+    //             if (userId && userType === 'employee' && internetId != '0') {
+    //                 const internetRecord = await internetModel.findOne({ _id: internetId });
+    //                 if (internetRecord) {
+    //                     mergedDetails.push(internetRecord);
+    //                 }
+    //             }
+
+    //             if (userId && userType === 'employee' && gpsId != '0') {
+    //                 const gpsRecord = await gpsModel.findOne({ _id: gpsId });
+    //                 if (gpsRecord) {
+    //                     mergedDetails.push(gpsRecord);
+    //                 }
+    //             }
+
+    //             if (userId && userType === 'employee' && loginId != '0') {
+    //                 const loginRecord = await loginModel.findOne({ _id: loginId });
+    //                 if (loginRecord) {
+    //                     mergedDetails.push(loginRecord);
+    //                 }
+    //             }
+
+    //             if (userId && userType === 'employee' && logoutId != '0') {
+    //                 const logoutRecord = await logoutModel.findOne({ _id: logoutId });
+    //                 if (logoutRecord) {
+    //                     mergedDetails.push(logoutRecord);
+    //                 }
+    //             }
+
+    //             // if (userId && userType === 'employee' && attendceId != '0') {
+    //             //     const attDetailout = await attendanceModel.findOne({ _id: attendceId });
+    //             //     if (attDetailout) {
+    //             //         mergedDetails.push(attDetailout);
+    //             //     }
+    //             // }
+    //         }
+
+    //         let totalDistance = 0;
+    //         let totalDuration = 0;
+
+    //         if (trackData.length > 0) {
+    //             for (let i = 0; i < trackData.length - 1; i++) {
+    //                 const originLat = trackData[i].lat;
+    //                 const originLong = trackData[i].long;
+    //                 const destinationLat = trackData[i + 1].lat;
+    //                 const destinationLong = trackData[i + 1].long;
+
+    //                 const locationInLatLong = originLat + ',' + originLong;
+    //                 const locationOutLatLong = destinationLat + ',' + destinationLong;
+
+    //                 const originCoords = await parseCoordinates(locationInLatLong);
+    //                 const destinationCoords = await parseCoordinates(locationOutLatLong);
+
+    //                 const resultDistance = await calculateDistanceAndDuration(originCoords, destinationCoords);
+
+    //                 if (
+    //                     resultDistance &&
+    //                     resultDistance.data &&
+    //                     resultDistance.data.rows &&
+    //                     resultDistance.data.rows.length > 0 &&
+    //                     resultDistance.data.rows[0].elements &&
+    //                     resultDistance.data.rows[0].elements.length > 0 &&
+    //                     resultDistance.data.rows[0].elements[0].distance &&
+    //                     resultDistance.data.rows[0].elements[0].distance.text &&
+    //                     resultDistance.data.rows[0].elements[0].duration &&
+    //                     resultDistance.data.rows[0].elements[0].duration.text
+    //                 ) {
+    //                     totalDistance += parseFloat(resultDistance.data.rows[0].elements[0].distance.text);
+    //                     totalDuration += parseFloat(resultDistance.data.rows[0].elements[0].duration.text);
+    //                 }
+    //             }
+    //         }
+
+    //         const response = {
+    //             employee: employee,
+    //             track: mergedDetails,
+    //             origin: {
+    //                 distance: totalDistance,
+    //                 duration: totalDuration,
+    //                 taskCount: taskCount  // Update with your logic for task count
+    //             },
+    //             pagination: {
+    //                 filterDate: filterDate,
+    //                 totalCount: totalCount,
+    //                 totalPages: Math.ceil(totalCount / itemsPerPage),
+    //                 currentPage: currentPage,
+    //                 perPage: itemsPerPage
+    //             }
+    //         };
+    //         const locationUpdate = {
+    //             userId: employee._id,
+    //             distance: totalDistance,
+    //             duration: totalDuration,
+    //             taskCount: taskCount 
+    //         };
+            
+    //         broadcastLocationUpdate(locationUpdate);
+
+    //         return res.status(200).json({ message: "Success", response });
+    //     } catch (error) {
+    //         console.error('Error fetching related data:', error);
+    //         res.status(500).json({ message: 'Internal Server Error' });
+    //     }
+    // };
+
+
+
     export const trackEmpRecord = async (req, res) => {
         try {
             const { userId, filterDate, page, perPage } = req.body;
             const currentPage = parseInt(page) || 1;
             const itemsPerPage = parseInt(perPage) || 10; // Default to 10 items per page
-
+    
             if (!userId) {
                 return res.status(400).json({ error: 'User id is empty' });
             }
-
+    
             const employee = await employeeModel.findById(userId, '-otp');
-
+    
             if (!employee) {
                 return res.status(404).json({ error: 'Employee not found' });
             }
-
+    
             let query = { userId: userId };
-
+    
             // task count
             let query2 = { userId: userId, status: 1 };
-
+    
             if (filterDate) {
                 const startDate = new Date(filterDate);
                 startDate.setUTCHours(0, 0, 0, 0); // Set to the start of the day
                 const endDate = new Date(filterDate);
                 endDate.setUTCHours(23, 59, 59, 999); // Set to the end of the day
-
+    
                 query.createdAt = {
                     $gte: startDate,
                     $lt: endDate
                 };
-
+    
                 query2.taskEndDate = {
                     $gte: startDate,
                     $lt: endDate
                 };
-
+    
             }
-
+    
             const tasksCount = await taskModel.find(query2, '-taskAddress');
             const taskCount = tasksCount.length; // Count of tasks
             // task count
-
-
+    
             const totalCount = await trackModel.countDocuments(query); // Total count of documents
-
+    
             const trackData = await trackModel.find(query)
                 .sort({ createdAt: 1 })
                 .skip((currentPage - 1) * itemsPerPage)
                 .limit(itemsPerPage);
-
+    
             if (!trackData || trackData.length === 0) {
                 return res.status(404).json({
                     message: "No Data Found", response: {
@@ -905,9 +1301,9 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
                     }
                 });
             }
-
+    
             let mergedDetails = [];
-
+    
             for (let i = 0; i < trackData.length; i++) {
                 const trackd = trackData[i];
                 const userType = trackd.userType;
@@ -919,56 +1315,56 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
                 const gpsId = trackd.gpsId;
                 const loginId = trackd.loginId;
                 const logoutId = trackd.logoutId;
-
+    
                 if (userId && userType === 'employee' && attendceId != '0') {
                     const attDetailIn = await attendanceModel.findOne({ _id: attendceId });
                     if (attDetailIn) {
                         mergedDetails.push(attDetailIn);
                     }
                 }
-
+    
                 if (taskId && taskId != '0') {
                     const taskData = await taskModel.findOne({ _id: taskId });
-
+    
                     if (taskData) {
                         const formattedTask = {
                             ...taskData.toObject(),
                             taskDate: moment(taskData.taskDate).format('YYYY-MM-DD hh:mm A'),
                             taskEndDate: (taskData.taskEndDate != null && taskData.taskEndDate != '') ? moment(taskData.taskEndDate).format('YYYY-MM-DD hh:mm A') : ''
                         };
-
+    
                         mergedDetails.push(formattedTask);
                     }
                 }
-
+    
                 if (userId && userType === 'employee' && internetId != '0') {
                     const internetRecord = await internetModel.findOne({ _id: internetId });
                     if (internetRecord) {
                         mergedDetails.push(internetRecord);
                     }
                 }
-
+    
                 if (userId && userType === 'employee' && gpsId != '0') {
                     const gpsRecord = await gpsModel.findOne({ _id: gpsId });
                     if (gpsRecord) {
                         mergedDetails.push(gpsRecord);
                     }
                 }
-
+    
                 if (userId && userType === 'employee' && loginId != '0') {
                     const loginRecord = await loginModel.findOne({ _id: loginId });
                     if (loginRecord) {
                         mergedDetails.push(loginRecord);
                     }
                 }
-
+    
                 if (userId && userType === 'employee' && logoutId != '0') {
                     const logoutRecord = await logoutModel.findOne({ _id: logoutId });
                     if (logoutRecord) {
                         mergedDetails.push(logoutRecord);
                     }
                 }
-
+    
                 // if (userId && userType === 'employee' && attendceId != '0') {
                 //     const attDetailout = await attendanceModel.findOne({ _id: attendceId });
                 //     if (attDetailout) {
@@ -976,49 +1372,47 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
                 //     }
                 // }
             }
-
+    
             let totalDistance = 0;
             let totalDuration = 0;
-
+    
             if (trackData.length > 0) {
                 for (let i = 0; i < trackData.length - 1; i++) {
                     const originLat = trackData[i].lat;
                     const originLong = trackData[i].long;
                     const destinationLat = trackData[i + 1].lat;
                     const destinationLong = trackData[i + 1].long;
-
+    
                     const locationInLatLong = originLat + ',' + originLong;
                     const locationOutLatLong = destinationLat + ',' + destinationLong;
-
+    
                     const originCoords = await parseCoordinates(locationInLatLong);
                     const destinationCoords = await parseCoordinates(locationOutLatLong);
-
+    
                     const resultDistance = await calculateDistanceAndDuration(originCoords, destinationCoords);
-
+    
+                    console.log('Origin:', originCoords);
+                    console.log('Destination:', destinationCoords);
+                    console.log('Result from API:', resultDistance);
+    
                     if (
                         resultDistance &&
-                        resultDistance.data &&
-                        resultDistance.data.rows &&
-                        resultDistance.data.rows.length > 0 &&
-                        resultDistance.data.rows[0].elements &&
-                        resultDistance.data.rows[0].elements.length > 0 &&
-                        resultDistance.data.rows[0].elements[0].distance &&
-                        resultDistance.data.rows[0].elements[0].distance.text &&
-                        resultDistance.data.rows[0].elements[0].duration &&
-                        resultDistance.data.rows[0].elements[0].duration.text
+                        !resultDistance.error && // Check if there's no error in the result
+                        resultDistance.distance &&
+                        resultDistance.duration
                     ) {
-                        totalDistance += parseFloat(resultDistance.data.rows[0].elements[0].distance.text);
-                        totalDuration += parseFloat(resultDistance.data.rows[0].elements[0].duration.text);
+                        totalDistance += parseFloat(resultDistance.distance.split(' ')[0]);
+                        totalDuration += parseFloat(resultDistance.duration.split(' ')[0]);
                     }
                 }
             }
-
+    
             const response = {
                 employee: employee,
                 track: mergedDetails,
                 origin: {
-                    distance: totalDistance,
-                    duration: totalDuration,
+                    distance: totalDistance.toFixed(2) + ' km', // Ensure the distance is in the correct format
+                    duration: totalDuration.toFixed(2) + ' mins', // Ensure the duration is in the correct format
                     taskCount: taskCount  // Update with your logic for task count
                 },
                 pagination: {
@@ -1031,20 +1425,17 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
             };
             const locationUpdate = {
                 userId: employee._id,
-                distance: totalDistance,
-                duration: totalDuration,
+                distance: totalDistance.toFixed(2) + ' km',
+                duration: totalDuration.toFixed(2) + ' mins',
                 taskCount: taskCount 
             };
-            
+    
             broadcastLocationUpdate(locationUpdate);
-
+    
             return res.status(200).json({ message: "Success", response });
         } catch (error) {
             console.error('Error fetching related data:', error);
             res.status(500).json({ message: 'Internal Server Error' });
         }
     };
-
-
-
-
+    

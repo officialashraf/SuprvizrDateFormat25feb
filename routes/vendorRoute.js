@@ -15,6 +15,6 @@ router.post('/update-image',authorize(['admin', 'vendor']),imageUpdate);
 
 router.post('/update-batterystatus',updateBatteryStatus);
 router.post('/update-internetstatus',updateInternetStatus);//not working--check it
-router.post('/update-gpsstatus',updateGpsStatus);
+router.post('/update-gpsstatus',updateGpsStatus);//not working--check it
 
 export default router;

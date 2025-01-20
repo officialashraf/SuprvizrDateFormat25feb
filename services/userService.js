@@ -14,11 +14,11 @@ const isValidPassword =async (password)=> {
   return validator.isLength(password, { min: 5 });
 }
 
-const parseCoordinates = async(coordinates)=> {
-  const [lat, lng] = coordinates.split(',').map(coord => parseFloat(coord.trim()));
-  return { lat, lng };
-}
-
+const parseCoordinates = (coords) => { 
+  const [lat, lng] = coords.split(','); 
+  return { lat: parseFloat(lat), lng: parseFloat(lng) 
+  }; 
+};
 
 const generateOTP= async()=> {
 
@@ -33,29 +33,42 @@ const generateOTP= async()=> {
 }
 
 
-// distanceMiddleware.js
-const calculateDistanceAndDuration = async(originCoords, destinationCoords) =>{
 
-  const apiKey = process.env.GMAPAPI;
 
+
+
+
+const calculateDistanceAndDuration = async (originCoords, destinationCoords) => {
   try {
-    const response = await axios.get('https://maps.googleapis.com/maps/api/distancematrix/json', {
+    // Ensure the correct URL format
+    const url = `https://router.project-osrm.org/route/v1/driving/${originCoords.lng},${originCoords.lat};${destinationCoords.lng},${destinationCoords.lat}`;
+
+    const response = await axios.get(url, {
       params: {
-        origins: `${originCoords.lat},${originCoords.lng}`,
-        destinations: `${destinationCoords.lat},${destinationCoords.lng}`,
-        key: apiKey,
-      },
+        overview: 'false', // Don't include the full route geometry
+        steps: 'false'     // Don't include detailed steps
+      }
     });
 
-    return response;
+    const data = response.data;
+
+    if (data.routes && data.routes.length > 0) {
+      const distance = data.routes[0].distance / 1000; // Convert meters to kilometers
+      const duration = data.routes[0].duration / 60;   // Convert seconds to minutes
+console.log("calculate data",data)
+      return { distance: `${distance.toFixed(2)} km`, duration: `${duration.toFixed(2)} mins` };
+    } else {
+      throw new Error('No route found');
+    }
 
   } catch (error) {
     console.error('Error fetching distance and duration:', error.message);
+    return { error: 'Unable to calculate distance and duration' };
   }
-}
+};
 
 
-const getLocation= async(lat, long) =>{
+const getLocation = async (lat, long) => {
   const apiKey = process.env.GMAPAPI;
 
   try {
@@ -66,6 +79,11 @@ const getLocation= async(lat, long) =>{
       },
     });
 
+    // Check if results array has elements
+    if (response.data.results.length === 0) {
+      throw new Error('No results found');
+    }
+
     // Extract the formatted address from the response
     const formattedAddress = response.data.results[0].formatted_address;
 
@@ -75,8 +93,8 @@ const getLocation= async(lat, long) =>{
     console.error('Error fetching address:', error.message);
     throw error; // Re-throw the error to be handled by the caller
   }
+};
 
-}
 
 
 
@@ -86,3 +104,22 @@ export { isValidEmail, isValidMobile, isValidPassword, generateOTP, calculateDis
 
 
 
+// const calculateDistanceAndDuration = async(originCoords, destinationCoords) =>{
+//   distanceMiddleware.js
+//   const apiKey = process.env.GMAPAPI;
+
+//   try {
+//     const response = await axios.get('https://maps.googleapis.com/maps/api/distancematrix/json', {
+//       params: {
+//         origins: `${originCoords.lat},${originCoords.lng}`,
+//         destinations: `${destinationCoords.lat},${destinationCoords.lng}`,
+//         key: apiKey,
+//       },
+//     });
+
+//     return response;
+
+//   } catch (error) {
+//     console.error('Error fetching distance and duration:', error.message);
+//   }
+// }

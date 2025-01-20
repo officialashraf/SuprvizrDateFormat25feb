@@ -6,14 +6,14 @@ import  { taskDocumentUploadHandler }  from '../middlewares/multer-config.js';
 
 
 
-router.post('/create', taskDocumentUploadHandler
-    .fields([ // Define your all task Controller route
+router.post('/create', taskDocumentUploadHandler.fields([ // Define your all task Controller route
     { name: 'taskDocument', maxCount: 1 },
     { name: 'taskImage', maxCount: 1 }]),
 
     createTask);
    
 
+    
 router.get('/list/:vendorId', taskList);
 router.get('/edit/:taskID', taskEdit);
 

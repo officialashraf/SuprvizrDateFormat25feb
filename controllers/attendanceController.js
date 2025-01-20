@@ -7,7 +7,7 @@ import {getLocation} from '../services/userService.js';
 import { broadcastLocationUpdate } from '../socket.js';
 
 import axios from 'axios';
-import moment from 'moment-timezone';
+import moment from 'moment-timezone';0
   //For attendance in api
 
  export const checkIn =  async (req, res) => {
@@ -38,6 +38,7 @@ import moment from 'moment-timezone';
         attnedanceLong: long,
         attnedanceAddress: locationGet,
         createdAt: createdAt,
+        status: "IN",
       });
 
       await newAttendance.save();
@@ -50,10 +51,11 @@ import moment from 'moment-timezone';
          attnedanceLong: long, 
          attnedanceAddress: locationGet,
           createdAt: createdAt,
+          status: "IN",
          };
        broadcastLocationUpdate(checkInData)
 
-      res.status(200).json({ message: 'Attendance checked in successfully' });
+      res.status(200).json({ message: 'Attendance ' + newAttendance.status+ ' Successfully' });
     } catch (error) {
       console.error('Error recording attendance:', error);
       res.status(500).json({ error: 'Internal Server Error' });
@@ -106,7 +108,7 @@ import moment from 'moment-timezone';
          };
        broadcastLocationUpdate(checkOutData)
 
-      res.status(200).json({ message: 'Attendance checked out successfully' });
+      res.status(200).json({ message: 'Attendance ' + newAttendance.status + ' Successfully' });
 
     } catch (error) {
       console.error('Error checking out attendance:', error);
@@ -139,37 +141,56 @@ import moment from 'moment-timezone';
 
 
   //get distance and duration 
-  export const getDuration=  async (req, res) => {
+  // export const getDuration=  async (req, res) => {
 
-    const apiKey = process.env.GMAPAPI;
-    const origin = req.body.origin;
-    const destination = req.body.destination;
+  //   const apiKey = process.env.GMAPAPI;
+  //   const origin = req.body.origin;
+  //   const destination = req.body.destination;
 
+  //   try {
+  //     const response = await axios.get(
+  //       `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&key=${apiKey}`
+  //     );
+
+  //     // console.log(response);
+
+  //     const distance = response.data.rows[0].elements[0].distance.text;
+  //     const duration = response.data.rows[0].elements[0].duration.text;
+
+  //     res.json({ distance, duration });
+  //   } catch (error) {
+  //     console.error('Error:', error.message);
+  //     res.status(500).json({ error: 'Internal Server Error' });
+  //   }
+
+
+  // };
+  export const getDuration = async (req, res) => {
+    const origin = req.body.origin; // Example: "13.388860,52.517037"
+    const destination = req.body.destination; // Example: "13.397634,52.529407"
+  
     try {
       const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&key=${apiKey}`
+        `https://router.project-osrm.org/route/v1/driving/${origin};${destination}?overview=false&geometries=polyline&steps=false`
       );
-
-      // console.log(response);
-
-      const distance = response.data.rows[0].elements[0].distance.text;
-      const duration = response.data.rows[0].elements[0].duration.text;
-
-      res.json({ distance, duration });
+  
+      // Extract distance and duration
+      const distance = response.data.routes[0].distance / 1000; // Convert meters to kilometers
+      const duration = response.data.routes[0].duration / 60; // Convert seconds to minutes
+  
+      res.json({ distance: `${distance.toFixed(2)} km`, duration: `${duration.toFixed(2)} min` });
     } catch (error) {
       console.error('Error:', error.message);
       res.status(500).json({ error: 'Internal Server Error' });
     }
-
-
   };
-
 
   export const attendanceInOut=  async (req, res) => {
     try {
 
       const { userId, lat, long, type } = req.body;
 
+      
       // Check if any one empty
       if (!userId || !lat || !long) {
         return res.status(400).json({ error: 'One or more fields are empty' });
@@ -207,8 +228,12 @@ import moment from 'moment-timezone';
 
         }
       }
+const agoCreatedAt  = moment.tz(myDate, 'Asia/Kolkata')
+const agoDate = agoCreatedAt.format('YYYY-MM-DD hh:mm A');
+//const agoDate = agoCreatedAt.format('YYYY-MM-DD');
 
-      const agoDate = new Date().toISOString();
+console.log(agoDate); // Example Output: 2025-01-08 07:05 PM
+console.log(agoCreatedAt); // Example Output: 2025-01-08
 
       if (type == 'vendor') {
 
@@ -406,6 +431,31 @@ import moment from 'moment-timezone';
     } catch (error) {
       console.error('Error:', error.message);
       // res.status(500).json({ error: 'Internal Server Error' });
+    }
+  };
+
+  export const getAttendanceStatus = async (req, res) => {
+    try {
+      const { userId } = req.body; // Get userId from body
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+      
+      const latestAttendance = await attendanceModel
+        .findOne({ userId })
+        .sort({ _id: -1 }); // Fetch the latest attendance record
+  
+      if (!latestAttendance) {
+        return res.status(404).json({ error: "No attendance record found" });
+      }
+  
+      res.status(200).json({
+        status: latestAttendance.status,
+        message: `User is currently ${latestAttendance.status}`,
+      });
+    } catch (error) {
+      console.error("Error fetching status:", error.message);
+      res.status(500).json({ error: "Internal Server Error" });
     }
   };
 

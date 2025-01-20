@@ -14,7 +14,7 @@ import logoutModel from  '../models/logoutModel.js';
 // import importANTS from  '../utils/importants';
 
 
-import { generateOTP } from  '../services/userService.js';
+import { generateOTP, getLocation , parseCoordinates, calculateDistanceAndDuration} from  '../services/userService.js';
 import moment from  'moment-timezone';
 import jwt from  'jsonwebtoken';
 
@@ -384,17 +384,27 @@ const upload = multer({ storage }).single("profileImg");
             }
 
 
-            const attendance = await attendanceModel.find({ userId: vendorId, createdAt: filterDate }, '-attnedanceAddress').sort({ attnedanceDate: 1 });
-
+            const attendance = await attendanceModel.find({ userId: vendorId
+                , createdAt: filterDate
+                  }
+                  //,'-attendanceAddress').sort({ attendanceDate: 1 }
+                 );
+     
+            console.log("alltendance", attendance)
+           
             const tasks = await taskModel.find({ userId: vendorId, status: 1 }, '-taskAddress');
             const taskCount = tasks.length; // Count of tasks
-
+            
+           
             const getCheckInOrigin = await attendanceModel.find({ userId: vendorId, status: "IN" }).sort({ attnedanceDate: -1 }).limit(1);
+            console.log("getcheckorigin", getCheckInOrigin)
             const getCheckOutOrigin = await attendanceModel.find({ userId: vendorId, status: "OUT" }).sort({ attnedanceDate: -1 }).limit(1);
+            console.log("getCheckoutorgine", getCheckOutOrigin)
 
             const checkInRecord = attendance.find(record => record.status === "IN");
+            console.log("checkIn Record", checkInRecord)
             const checkOutRecord = attendance.find(record => record.status === "OUT");
-
+            console.log("checkoutrecord", checkOutRecord)
 
             // Calculate distance and duration for single task
             let totalDistance = 0;
@@ -413,10 +423,10 @@ const upload = multer({ storage }).single("profileImg");
                     const locationInLatLong = originLat + ',' + originLong;
                     const locationOutLatLong = destinationLat + ',' + destinationLong;
 
-                    const originCoords = await userService.parseCoordinates(locationInLatLong);
-                    const destinationCoords = await userService.parseCoordinates(locationOutLatLong);
+                    const originCoords = await parseCoordinates(locationInLatLong);
+                    const destinationCoords = await parseCoordinates(locationOutLatLong);
 
-                    const result = await userService.calculateDistanceAndDuration(originCoords, destinationCoords);
+                    const result = await calculateDistanceAndDuration(originCoords, destinationCoords);
 
                     totalDistance = result.data.rows[0].elements[0].distance.text;
                     totalDuration = result.data.rows[0].elements[0].duration.text;
@@ -441,10 +451,10 @@ const upload = multer({ storage }).single("profileImg");
                 const locationInLatLong = originLat + ',' + originLong;
                 const locationOutLatLong = destinationLat + ',' + destinationLong;
 
-                const originCoords = await userService.parseCoordinates(locationInLatLong);
-                const destinationCoords = await userService.parseCoordinates(locationOutLatLong);
+                const originCoords = await parseCoordinates(locationInLatLong);
+                const destinationCoords = await parseCoordinates(locationOutLatLong);
 
-                const result = await userService.calculateDistanceAndDuration(originCoords, destinationCoords);
+                const result = await calculateDistanceAndDuration(originCoords, destinationCoords);
 
                 totalDistance = parseFloat(result.data.rows[0].elements[0].distance.text);
                 totalDuration = parseFloat(result.data.rows[0].elements[0].duration.text);
@@ -459,15 +469,16 @@ const upload = multer({ storage }).single("profileImg");
                     const locationInLatLong = originLat + ',' + originLong;
                     const locationOutLatLong = destinationLat + ',' + destinationLong;
 
-                    const originCoords = await userService.parseCoordinates(locationInLatLong);
-                    const destinationCoords = await userService.parseCoordinates(locationOutLatLong);
+                    const originCoords = await parseCoordinates(locationInLatLong);
+                    const destinationCoords = await parseCoordinates(locationOutLatLong);
 
-                    const result = await userService.calculateDistanceAndDuration(originCoords, destinationCoords);
-
+                    const result = await calculateDistanceAndDuration(originCoords, destinationCoords);
+                   console.log("resultvendor travk", result)
                     totalDistance += parseFloat(result.data.rows[0].elements[0].distance.text);
                     totalDuration += parseFloat(result.data.rows[0].elements[0].duration.text);
                 }
             } else {
+                
                 // Calculate distance and duration for each task
                 let startTaskLat, startTaskLong, endTaskLat, endTaskLong;
                 for (let i = 0; i < tasks.length; i++) {
@@ -483,7 +494,7 @@ const upload = multer({ storage }).single("profileImg");
                         endTaskLat = taskLocation.coordinates[0];
                         endTaskLong = taskLocation.coordinates[1];
                     }
-
+                     console.log("checkinrecor", checkInRecord)
                     const originLat = (i === 0) ? checkInRecord.attnedanceLat : tasks[i - 1].location.coordinates[0];
                     const originLong = (i === 0) ? checkInRecord.attnedanceLong : tasks[i - 1].location.coordinates[1];
                     const destinationLat = taskLocation.coordinates[0];
@@ -492,16 +503,24 @@ const upload = multer({ storage }).single("profileImg");
                     const locationInLatLong = originLat + ',' + originLong;
                     const locationOutLatLong = destinationLat + ',' + destinationLong;
 
-                    const originCoords = await userService.parseCoordinates(locationInLatLong);
-                    const destinationCoords = await userService.parseCoordinates(locationOutLatLong);
+                    const originCoords = await parseCoordinates(locationInLatLong);
+                    const destinationCoords = await parseCoordinates(locationOutLatLong);
 
-                    const result = await userService.calculateDistanceAndDuration(originCoords, destinationCoords);
-
-                    totalDistance += parseFloat(result.data.rows[0].elements[0].distance.text);
-                    totalDuration += parseFloat(result.data.rows[0].elements[0].duration.text);
+                    const result = await calculateDistanceAndDuration(originCoords, destinationCoords);
+                    console.log("resultvendor track2", result)
+                    if (result.data && result.data.distance && result.data.duration) {
+                        // Parse the distance and duration from the result
+                        const distanceText = result.data.distance.replace(' km', ''); // Remove the ' km' part 
+                         const durationText = result.data.duration.replace(' mins', ''); // Remove the ' mins' part
+                          totalDistance += parseFloat(distanceText); 
+                          totalDuration += parseFloat(durationText); 
+                       } else {
+                            console.error('Error: Invalid API response structure'); 
+                       }
                 }
 
                 // If there's a check-out record, calculate distance and duration from last task to check-out
+              
                 if (checkOutRecord) {
                     const originLat = endTaskLat;
                     const originLong = endTaskLong;
@@ -511,13 +530,20 @@ const upload = multer({ storage }).single("profileImg");
                     const locationInLatLong = originLat + ',' + originLong;
                     const locationOutLatLong = destinationLat + ',' + destinationLong;
 
-                    const originCoords = await userService.parseCoordinates(locationInLatLong);
-                    const destinationCoords = await userService.parseCoordinates(locationOutLatLong);
+                    const originCoords = await parseCoordinates(locationInLatLong);
+                    const destinationCoords = await parseCoordinates(locationOutLatLong);
 
-                    const result = await userService.calculateDistanceAndDuration(originCoords, destinationCoords);
-
-                    totalDistance += parseFloat(result.data.rows[0].elements[0].distance.text);
-                    totalDuration += parseFloat(result.data.rows[0].elements[0].duration.text);
+                    const result = await calculateDistanceAndDuration(originCoords, destinationCoords);
+                    console.log("resultvendor track3", result)
+                    if (result.data && result.data.distance && result.data.duration) {
+                        // Parse the distance and duration from the result
+                        const distanceText = result.data.distance.replace(' km', ''); // Remove the ' km' part 
+                         const durationText = result.data.duration.replace(' mins', ''); // Remove the ' mins' part
+                          totalDistance += parseFloat(distanceText); 
+                          totalDuration += parseFloat(durationText); 
+                       } else {
+                            console.error('Error: Invalid API response structure'); 
+                       }
                 }
             }
 
@@ -898,55 +924,57 @@ const upload = multer({ storage }).single("profileImg");
     export const trackVendorNewRecord = async (req, res) => {
         try {
             const { userId, filterDate, page, perPage } = req.body;
+            console.log("Request Body:", req.body);
+            console.log("userTRACK", userId);
             const currentPage = parseInt(page) || 1;
             const itemsPerPage = parseInt(perPage) || 10; // Default to 10 items per page
-
+    
             if (!userId) {
                 return res.status(400).json({ error: 'Vendor id is empty' });
             }
-
-            const vendor = await vendorModel.findById(userId, '-vandorOtp');
+    
+            const vendor = await vendorModel.findById(userId, '-vendorOtp');
             if (!vendor) {
                 return res.status(404).json({ error: 'Vendor not found' });
             }
-
+    
             let query = { userId: userId };
-
+    
             if (filterDate) {
                 const startDate = new Date(filterDate);
                 startDate.setUTCHours(0, 0, 0, 0); // Set to the start of the day
                 const endDate = new Date(filterDate);
                 endDate.setUTCHours(23, 59, 59, 999); // Set to the end of the day
-
+    
                 query.createdAt = {
                     $gte: startDate,
                     $lt: endDate
                 };
             }
-
+    
             // Count of tasks
             let query2 = { userId: userId, status: 1 };
-
+    
             if (filterDate) {
                 const startDate = new Date(filterDate);
                 startDate.setUTCHours(0, 0, 0, 0); // Set to the start of the day
                 const endDate = new Date(filterDate);
                 endDate.setUTCHours(23, 59, 59, 999); // Set to the end of the day
-
+    
                 query2.taskEndDate = {
                     $gte: startDate,
                     $lt: endDate
                 };
             }
-
+    
             console.log('query2', query2);
             const tasksCount = await taskModel.find(query2, '-taskAddress');
             const taskCount = tasksCount.length; // Count of tasks
             // console.log('taskCount',taskCount);
-
+    
             // Fetch trackData with pagination
             const totalCount = await trackModel.countDocuments(query); // Total count of documents
-
+    
             const trackData = await trackModel.find(query)
                 .sort({ createdAt: 1 })
                 .skip((currentPage - 1) * itemsPerPage)
@@ -969,19 +997,19 @@ const upload = multer({ storage }).single("profileImg");
                         perPage: 0
                     }
                 };
-
+    
                 return res.status(404).json({ message: "No Data Found", response });
             }
-
+    
             let mergedDetails = [];
             let totalDistance = 0;
             let totalDuration = 0;
-
+    
             // Process trackData items
             for (let i = 0; i < trackData.length; i++) {
                 const trackd = trackData[i];
                 const userType = trackd.userType;
-                const userId = trackd.userId;
+                const userId = trackd.userId;  // Ensure this userId doesn't override the parent scope
                 const status = trackd.status;
                 const taskId = trackd.taskId;
                 const attendceId = trackd.attendceId;
@@ -989,10 +1017,10 @@ const upload = multer({ storage }).single("profileImg");
                 const gpsId = trackd.gpsId;
                 const loginId = trackd.loginId;
                 const logoutId = trackd.logoutId;
-
+    
                 // Handle your merging logic based on userType and IDs
                 // Example: Fetch related documents and push to mergedDetails array
-
+    
                 // Example for attendance details
                 if (userId && userType === 'vendor' && attendceId != '0') {
                     const attDetailIn = await attendanceModel.findOne({ _id: attendceId });
@@ -1000,7 +1028,7 @@ const upload = multer({ storage }).single("profileImg");
                         mergedDetails.push(attDetailIn);
                     }
                 }
-
+    
                 // Example for task details
                 if (taskId && taskId != '0') {
                     const taskData = await taskModel.findOne({ _id: taskId });
@@ -1013,7 +1041,7 @@ const upload = multer({ storage }).single("profileImg");
                         mergedDetails.push(formattedTask);
                     }
                 }
-
+    
                 // Example for other records (internet, gps, login, logout)
                 if (userId && userType === 'vendor') {
                     if (internetId != '0') {
@@ -1041,45 +1069,60 @@ const upload = multer({ storage }).single("profileImg");
                         }
                     }
                 }
-
+    
                 // Calculate distance and duration if needed
                 if (i < trackData.length - 1) {
+                    console.log("trackData", trackData)
                     const originLat = trackData[i].lat;
                     const originLong = trackData[i].long;
+                   
                     const destinationLat = trackData[i + 1].lat;
                     const destinationLong = trackData[i + 1].long;
-
+               
+    
                     const locationInLatLong = `${originLat},${originLong}`;
                     const locationOutLatLong = `${destinationLat},${destinationLong}`;
-
-                    const originCoords = await userService.parseCoordinates(locationInLatLong);
-                    const destinationCoords = await userService.parseCoordinates(locationOutLatLong);
-
-                    const resultDistance = await userService.calculateDistanceAndDuration(originCoords, destinationCoords);
-
-                    if (resultDistance &&
-                        resultDistance.data &&
-                        resultDistance.data.rows &&
-                        resultDistance.data.rows.length > 0 &&
-                        resultDistance.data.rows[0].elements &&
-                        resultDistance.data.rows[0].elements.length > 0 &&
-                        resultDistance.data.rows[0].elements[0].distance &&
-                        resultDistance.data.rows[0].elements[0].distance.text &&
-                        resultDistance.data.rows[0].elements[0].duration &&
-                        resultDistance.data.rows[0].elements[0].duration.text) {
-                        totalDistance += parseFloat(resultDistance.data.rows[0].elements[0].distance.text);
-                        totalDuration += parseFloat(resultDistance.data.rows[0].elements[0].duration.text);
+                   
+    
+                    const originCoords = await parseCoordinates(locationInLatLong);
+                    const destinationCoords = await parseCoordinates(locationOutLatLong);
+    
+                    const resultDistance = await calculateDistanceAndDuration(originCoords, destinationCoords);
+                     console.log("resultDistance", resultDistance);
+                    // if (resultDistance &&
+                    //     resultDistance.data &&
+                    //     resultDistance.data.rows &&
+                    //     resultDistance.data.rows.length > 0 &&
+                    //     resultDistance.data.rows[0].elements &&
+                    //     resultDistance.data.rows[0].elements.length > 0 &&
+                    //     resultDistance.data.rows[0].elements[0].distance &&
+                    //     resultDistance.data.rows[0].elements[0].distance.text &&
+                    //     resultDistance.data.rows[0].elements[0].duration &&
+                    //     resultDistance.data.rows[0].elements[0].duration.text) {
+                    //     totalDistance += parseFloat(resultDistance.data.rows[0].elements[0].distance.text);
+                    //     totalDuration += parseFloat(resultDistance.data.rows[0].elements[0].duration.text);
+                    // }
+                    if (
+                        resultDistance &&
+                        !resultDistance.error && // Check if there's no error in the result
+                        resultDistance.distance &&
+                        resultDistance.duration
+                    ) {
+                        totalDistance += parseFloat(resultDistance.distance.split(' ')[0]);
+                        totalDuration += parseFloat(resultDistance.duration.split(' ')[0]);
                     }
+                    console.log("totalDistance", totalDistance)
+                    console.log("totalDuraation", totalDuration)
                 }
             }
-
+    
             // Prepare response object with pagination details
             const response = {
                 vendor: vendor,
                 track: mergedDetails,
                 origin: {
-                    distance: totalDistance,
-                    duration: totalDuration,
+                    distance: totalDistance.toFixed(2) + ' km', 
+                    duration: totalDuration.toFixed(2) + ' mins',
                     taskCount: taskCount
                 },
                 pagination: {
@@ -1090,25 +1133,25 @@ const upload = multer({ storage }).single("profileImg");
                     perPage: itemsPerPage
                 }
             };
-
+    
             const trackVendorRecord = {
-                vendorId : userId,
+                vendorId: userId,
                 track: mergedDetails,
                 distance: totalDistance,
                 duration: totalDuration,
                 taskCount: taskCount,
                 filterDate: filterDate,
-                totalCount: totalCount,   
+                totalCount: totalCount,
             };
-             broadcastLocationUpdate(trackVendorRecord)
-
+    
+            broadcastLocationUpdate(trackVendorRecord);
+    
             return res.status(200).json({ message: "Success", response });
         } catch (error) {
             console.error('Error fetching related data:', error);
-            res.status(500).json({ message: 'Internal Server Error' });
-        }
-    };
-
+            res.status(500).json({ message: 'Internal Server Error'});
+        };
+    }
 
     //update battery status for vendor/employee
     export const updateBatteryStatus = async (req, res) => {
@@ -1176,7 +1219,7 @@ const upload = multer({ storage }).single("profileImg");
             const currentDate1 = currentDateIST.format('YYYY-MM-DD hh:mm A');
             const createdAt = currentDateIST.format('YYYY-MM-DD');
 
-            const locationGet = await userService.getLocation(lat, long);
+            const locationGet = await getLocation(lat, long);
 
             //   console.log(';currentDate',currentDate);
             //   console.log('fsdfs',{
@@ -1254,7 +1297,7 @@ const upload = multer({ storage }).single("profileImg");
             const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
             const createdAt = currentDateIST.format('YYYY-MM-DD');
 
-            const locationGet = await userService.getLocation(lat, long);
+            const locationGet = await getLocation(lat, long);
 
             // Save gps record
             const savedGps = new gpsModel({

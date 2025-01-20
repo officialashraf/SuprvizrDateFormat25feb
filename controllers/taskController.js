@@ -5,6 +5,9 @@ import vendorModel from '../models/vendorModel.js';
 import clientModel  from '../models/clientModel.js';
 import trackModel from '../models/trackModel.js';
 import fs from 'fs';
+import { fileURLToPath } from 'url'; 
+
+// Resolve __dirname for ES6 modules
 
 
 import axios from 'axios';
@@ -22,7 +25,8 @@ import { broadcastLocationUpdate } from  '../socket.js';
 import mongoose from 'mongoose';
 const ObjectId = mongoose.Types.ObjectId;
 
-
+const __filename = fileURLToPath(import.meta.url); 
+const __dirname = path.dirname(__filename);
 // Storage configuration for multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -61,10 +65,10 @@ const upload = multer({ storage }).single("taskDocument");
 
         // task name, 
 
-        //Check if any of the properties is empty or falsy
-        if (!userId || !clientId  || !taskName || !taskDate || !address || !lat || !long || !vendorId || !type) {
-          return res.status(400).json({ error: 'One or more fields are empty' });
-        }
+        // //Check if any of the properties is empty or falsy
+        // if (!userId || !clientId  || !taskName || !taskDate || !address || !lat || !long || !vendorId || !type) {
+        //   return res.status(400).json({ error: 'One or more fields are empty' });
+        // }
 
         // if (!userId || !taskName) {
         if ( !taskName) {
@@ -159,7 +163,7 @@ const upload = multer({ storage }).single("taskDocument");
 
         await newTask.save();
 
-        res.status(201).json({ message: 'Task created successfully' });
+        res.status(201).json({ message: 'Task created successfully' , taskId: newTask._id});
 
     } catch (error) {
       console.error(error);
@@ -562,7 +566,7 @@ const upload = multer({ storage }).single("taskDocument");
         task.taskEndDate = taskEndDate || task.taskEndDate;
 
         await task.save();
-
+console.log("taskDetails", task)
         //track log inser here
         const newTrack = new trackModel({
           userId: task.userId,
@@ -575,6 +579,7 @@ const upload = multer({ storage }).single("taskDocument");
           createdAt: taskEndDate,
         })
         await newTrack.save();
+        console.log("taskNew", newTrack)
         // end track log
 
         const taskUpdate = { 
@@ -586,7 +591,7 @@ const upload = multer({ storage }).single("taskDocument");
          };
          broadcastLocationUpdate(taskUpdate)
 
-        res.status(200).json({ message: 'Task Done Successfully' });
+        res.status(200).json({ message: 'Task Done Successfully', status: newTrack.status  });
 
       });
 
@@ -598,61 +603,103 @@ const upload = multer({ storage }).single("taskDocument");
   };
 
   // //get distance and duration
-  export const CheckDistanceAndDuration= async (req, res) => {
+  // export const CheckDistanceAndDuration= async (req, res) => {
 
+  //   try {
+
+  //     const { origin, destination } = req.body;
+
+  //     if (!origin || !destination) {
+  //       return res.status(400).json({ message: 'Origin and destination coordinates are required.' });
+  //     }
+      
+  //     // Parse origin and destination coordinates
+  //     const originCoords = await parseCoordinates(origin);
+  //     const destinationCoords = await parseCoordinates(destination);
+
+  //     console.log('Origin:', originCoords);
+  //      console.log('Destination:', destinationCoords);
+       
+  //     const result = await calculateDistanceAndDuration(originCoords, destinationCoords);
+
+  //     console.log('API Response Data:', { 
+  //       destination_addresses: result?.data?.destination_addresses, 
+  //       origin_addresses: result?.data?.origin_addresses,
+  //        elements: result?.data?.rows?.[0]?.elements 
+  //       });
+
+  //     if (result && result.data && result.data.rows && result.data.rows[0] && result.data.rows[0].elements && result.data.rows[0].elements[0]) {
+  //        const distance = result.data.rows[0].elements[0].distance.text || 'N/A';
+  //         const duration = result.data.rows[0].elements[0].duration.text || 'N/A'; 
+  //         const destination_addresses = result.data.destination_addresses || 'N/A';
+  //          const origin_addresses = result.data.origin_addresses || 'N/A'
+  //          ; res.status(200).json({ 
+  //           message: 'Get successfully', 
+  //           distance,
+  //            duration });
+  //    } else { 
+  //     throw new Error('Invalid response structure from distance API'); } }
+
+  //     // res.status(200).json({
+  //     //   message: 'Get successfully', distance,
+  //     //   duration,
+  //     //   origin: {
+  //     //     address: origin_addresses,
+  //     //     coordinates: originCoords,
+  //     //   },
+  //     //   destination: {
+  //     //     address: destination_addresses,
+  //     //     coordinates: destinationCoords,
+  //     //   },
+  //     //   destination_addresses,
+  //     //   origin_addresses,
+  //     // });
+
+  //   catch (error) {
+  //     console.error('Error fetching distance and duration:', error.message);
+  //     res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  //   }
+  // };
+
+ // const parseCoordinates = require('path/to/parseCoordinates');
+  //onst calculateDistanceAndDuration = require('path/to/calculateDistanceAndDuration');
+  
+  //  parseCoordinates = (coords) => {
+  //   const [lat, lng] = coords.split(',');
+  //   return { lat: parseFloat(lat), lng: parseFloat(lng) };
+  // };
+  
+  export const CheckDistanceAndDuration = async (req, res) => {
     try {
-
       const { origin, destination } = req.body;
-
+  
       if (!origin || !destination) {
         return res.status(400).json({ message: 'Origin and destination coordinates are required.' });
       }
-      
-      // Parse origin and destination coordinates
-      const originCoords = await parseCoordinates(origin);
-      const destinationCoords = await parseCoordinates(destination);
-
-      console.log('Origin:', originCoords);
-       console.log('Destination:', destinationCoords);
-       
+  
+      const originCoords = parseCoordinates(origin);
+      const destinationCoords = parseCoordinates(destination);
+  
       const result = await calculateDistanceAndDuration(originCoords, destinationCoords);
-
-      console.log('API Response Data:', { 
-        destination_addresses: result?.data?.destination_addresses, 
-        origin_addresses: result?.data?.origin_addresses,
-         elements: result?.data?.rows?.[0]?.elements 
+  
+      if (result && !result.error) {
+        return res.status(200).json({ 
+          message: 'Get successfully', 
+          distance: result.distance,
+          duration: result.duration,
+          origin: {
+            coordinates: originCoords,
+          },
+          destination: {
+            coordinates: destinationCoords,
+          }
         });
-
-      if (result && result.data && result.data.rows && result.data.rows[0] && result.data.rows[0].elements && result.data.rows[0].elements[0]) {
-         const distance = result.data.rows[0].elements[0].distance.text || 'N/A';
-          const duration = result.data.rows[0].elements[0].duration.text || 'N/A'; 
-          const destination_addresses = result.data.destination_addresses || 'N/A';
-           const origin_addresses = result.data.origin_addresses || 'N/A'
-           ; res.status(200).json({ 
-            message: 'Get successfully', 
-            distance,
-             duration });
-     } else { 
-      throw new Error('Invalid response structure from distance API'); } }
-
-      // res.status(200).json({
-      //   message: 'Get successfully', distance,
-      //   duration,
-      //   origin: {
-      //     address: origin_addresses,
-      //     coordinates: originCoords,
-      //   },
-      //   destination: {
-      //     address: destination_addresses,
-      //     coordinates: destinationCoords,
-      //   },
-      //   destination_addresses,
-      //   origin_addresses,
-      // });
-
-    catch (error) {
+      } else {
+        throw new Error(result.error || 'Invalid response structure from distance API');
+      }
+    } catch (error) {
       console.error('Error fetching distance and duration:', error.message);
-      res.status(500).json({ message: 'Internal Server Error', error: error.message });
+      return res.status(500).json({ message: 'Internal Server Error', error: error.message });
     }
   };
-
+  

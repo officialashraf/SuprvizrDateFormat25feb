@@ -8,6 +8,7 @@ import multer from 'multer';
 import path from 'path';
 import moment from 'moment-timezone';
 
+
 // Storage configuration for multer
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -53,6 +54,12 @@ const upload = multer({ storage }).single("clientDocument");
                     return res.status(400).json({ error: 'Client name or mobile number is required!' });
                 }
                 // Check if file was provided
+                const latitude = parseFloat(lat);
+                const longitude = parseFloat(long);
+            
+                if (isNaN(latitude) || isNaN(longitude)) {
+                    return res.status(400).json({ error: 'Latitude and Longitude must be valid numbers' });
+                }
 
                 let uploadedFile = '';
 
@@ -75,11 +82,11 @@ const upload = multer({ storage }).single("clientDocument");
                 if (type == 'vendor') {
 
                     const existingvendor = await vendorModel.findOne({ _id: vendorId });
-
+                    console.log("existingVendor", existingvendor)
                     createdBy = existingvendor.vendorName;
                     createdByImg = existingvendor.empImg;
                 } else if (type == 'employee') {
-
+                     
                     const existingEmp = await employeeModel.findOne({ _id: vendorId });
                     console.log(existingEmp)
                    createdBy = existingEmp.fullname;
@@ -127,7 +134,7 @@ const upload = multer({ storage }).single("clientDocument");
                     type,
                     clientLocation: {
                         type: 'Point',
-                        coordinates: [parseFloat(lat), parseFloat(long)],
+                        coordinates: [latitude, longitude],
                     },
                     created: currentDate,
                     clientDocument: uploadedFile,
@@ -136,7 +143,7 @@ const upload = multer({ storage }).single("clientDocument");
 
                 await newClient.save();
 
-                res.status(201).json({ message: 'Client created successfully' });
+                res.status(201).json({ message: 'Client created successfully' ,clientId: newClient._id});
 
             }); //multer
 
@@ -235,130 +242,239 @@ const upload = multer({ storage }).single("clientDocument");
     };
 
 
-    //For updateClient update
-    export const updateClients = async (req, res) => {
+//     //For updateClient update
+//     export const updateClients = async (req, res) => {
 
-        try {
+//         try {
 
-            // Handle file upload using multer middleware
-            upload(req, res, async function (err) {
+//             // Handle file upload using multer middleware
+//             upload(req, res, async function (err) {
 
-                // upload(req, res, async (err) => {
-                if (err instanceof multer.MulterError) {
-                    // A Multer error occurred when uploading.
-                    console.error(err);
-                    res.status(500).json({ error: "An error occurred during file upload." });
-                } else if (err) {
-                    // An unknown error occurred when uploading.
-                    console.error(err);
-                    res.status(500).json({ error: "An unknown error occurred during file upload." });
+//                 // upload(req, res, async (err) => {
+//                 if (err instanceof multer.MulterError) {
+//                     // A Multer error occurred when uploading.
+//                     console.error(err);
+//                     res.status(500).json({ error: "An error occurred during file upload." });
+//                 } else if (err) {
+//                     // An unknown error occurred when uploading.
+//                     console.error(err);
+//                     res.status(500).json({ error: "An unknown error occurred during file upload." });
+//                 }
+
+
+//                 const { clientId, clientFullName, clientEmail, clientMobile, clientCompany, clientAddress, clientCity, clientState, clientCountry, clientZip, lat, long, vendorId, type } = req.body;
+
+//                 if (!clientFullName || !clientMobile) {
+//                     return res.status(400).json({ error: 'Client name or mobile number is required!' });
+//                 }
+
+//                 // Check if file was provided
+
+//                 let uploadedFile = '';
+
+//                 if (req.file) {
+
+//                     uploadedFile = "clientDoc/" + req.file.filename;
+
+//                 }
+
+
+
+//                 const Client = await clientModel.findById(clientId);
+// console.log('Client', Client)
+//                 if (clientEmail && !await isValidEmail(clientEmail)) {
+//                     return res.status(400).json({ message: 'Invalid email address' });
+//                 }
+//                 if (!await isValidMobile(clientMobile)) {
+//                     return res.status(400).json({ message: 'Invalid mobile number' });
+//                 }
+
+// console.log("client",clientMobile)
+//                 //already check mobile for client
+//                 if (clientMobile !== Client.clientMobile) {
+
+//                     const existingMobile = await clientModel.findOne({ clientMobile });
+
+
+//                     if (existingMobile && existingMobile._id.toString() !== clientId) {
+//                         return res.status(400).json({ message: 'Mobile number already exists for another client' });
+//                     }
+//                 }
+
+
+//                 //already check email for client
+//                 if (clientEmail !== Client.clientEmail) {
+
+//                     const existingEmail = await clientModel.findOne({ clientEmail });
+
+
+//                     if (clientEmail && existingEmail && existingEmail._id.toString() !== clientId) {
+//                         return res.status(400).json({ message: 'Email Id already exists for another client' });
+//                     }
+//                 }
+
+
+//                 let createdBy = '';
+//                 let createdByImg = '';
+//                 console.log("id", vendorId)
+//                 if (type == 'vendor') {
+
+//                     const existingvendor = await vendorModel.findOne({ _id: vendorId });
+//                     console.log("existingvendor",existingvendor); 
+//                     createdBy = existingvendor.vendorName;
+//                     createdByImg = existingvendor.empImg;
+                    
+//                 } else if (type == 'employee') {
+
+//                     const existingemployee = await employeeModel.findOne({ _id: vendorId });
+//                     console.log("existingemployee",existingemployee);
+//                     createdBy = existingemployee.fullname;
+//                     createdByImg = existingemployee.empImg;
+//                     //createdBy = "ashraf" **it is not accesible by this
+
+//                 }
+
+//                 const myDate = new Date();
+//                 const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
+//                 const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+
+//                 // Update profile fields
+//                 Client.clientFullName = clientFullName || Client.clientFullName;
+//                 Client.clientEmail = clientEmail || Client.clientEmail;
+//                 Client.clientMobile = clientMobile || Client.clientMobile;
+//                 Client.clientCompany = clientCompany || Client.clientCompany;
+//                 Client.clientAddress = clientAddress || Client.clientAddress;
+
+//                 Client.clientCity = clientCity || Client.clientCity;
+//                 Client.clientState = clientState || Client.clientState;
+//                 Client.clientCountry = clientCountry || Client.clientCountry;
+//                 Client.clientZip = clientZip || Client.clientZip;
+
+//                 Client.clientLocation.coordinates[0] = lat || Client.clientLocation.coordinates[0];
+//                 Client.clientLocation.coordinates[1] = long || Client.clientLocation.coordinates[1];
+
+//                 Client.clientDocument = uploadedFile || Client.clientDocument;
+//                 Client.vendorId = vendorId || Client.vendorId;
+//                 Client.type = type || Client.type;
+//                 Client.createdBy = createdBy || Client.createdBy;
+//                 Client.createdByImg = createdByImg || Client.createdByImg;
+
+//                 await Client.save();
+
+//                 res.status(200).json({ message: 'Client updated successfully' });
+//             }); //multer
+//         } catch (error) {
+//             console.error(error);
+//             res.status(500).json({ message: 'Internal Server Error' });
+//         }
+
+//     };
+
+
+
+export  const updateClients = async (req, res) => {
+    try {
+        // Handle file upload using multer middleware
+        upload(req, res, async function (err) {
+            if (err instanceof multer.MulterError) {
+                console.error(err);
+                return res.status(500).json({ error: "An error occurred during file upload." });
+            } else if (err) {
+                console.error(err);
+                return res.status(500).json({ error: "An unknown error occurred during file upload." });
+            }
+
+            const { clientId, clientFullName, clientEmail, clientMobile, clientCompany, clientAddress, clientCity, clientState, clientCountry, clientZip, lat, long, vendorId, type } = req.body;
+
+            if (!clientFullName || !clientMobile) {
+                return res.status(400).json({ error: 'Client name or mobile number is required!' });
+            }
+
+            // Check if file was provided
+            let uploadedFile = '';
+            if (req.file) {
+                uploadedFile = "clientDoc/" + req.file.filename;
+            }
+               
+            const Client = await clientModel.findById(clientId);
+            if (!Client) {
+                return res.status(404).json({ error: 'Client not found' });
+            }
+
+            if (clientEmail && !await isValidEmail(clientEmail)) {
+                return res.status(400).json({ message: 'Invalid email address' });
+            }
+            if (!await isValidMobile(clientMobile)) {
+                return res.status(400).json({ message: 'Invalid mobile number' });
+            }
+
+            // Check existing mobile for client
+            if (clientMobile !== Client.clientMobile) {
+                const existingMobile = await clientModel.findOne({ clientMobile });
+                if (existingMobile && existingMobile._id.toString() !== clientId) {
+                    return res.status(400).json({ message: 'Mobile number already exists for another client' });
                 }
+            }
 
-
-                const { clientId, clientFullName, clientEmail, clientMobile, clientCompany, clientAddress, clientCity, clientState, clientCountry, clientZip, lat, long, vendorId, type } = req.body;
-
-                if (!clientFullName || !clientMobile) {
-                    return res.status(400).json({ error: 'Client name or mobile number is required!' });
+            // Check existing email for client
+            if (clientEmail !== Client.clientEmail) {
+                const existingEmail = await clientModel.findOne({ clientEmail });
+                if (clientEmail && existingEmail && existingEmail._id.toString() !== clientId) {
+                    return res.status(400).json({ message: 'Email Id already exists for another client' });
                 }
+            }
 
-                // Check if file was provided
+            let createdBy = '';
+            let createdByImg = '';
 
-                let uploadedFile = '';
-
-                if (req.file) {
-
-                    uploadedFile = "clientDoc/" + req.file.filename;
-
+            if (type == 'vendor') {
+                const existingvendor = await vendorModel.findOne({ _id: vendorId });
+                if (!existingvendor) {
+                    return res.status(404).json({ message: 'Vendor not found' });
                 }
-
-
-
-                const Client = await clientModel.findById(clientId);
-
-                if (clientEmail && !await isValidEmail(clientEmail)) {
-                    return res.status(400).json({ message: 'Invalid email address' });
+                createdBy = existingvendor.vendorName;
+                createdByImg = existingvendor.empImg;
+            } else if (type == 'employee') {
+                const existingemployee = await employeeModel.findOne({ _id: vendorId });
+                if (!existingemployee) {
+                    return res.status(404).json({ message: 'Employee not found' });
                 }
-                if (!await isValidMobile(clientMobile)) {
-                    return res.status(400).json({ message: 'Invalid mobile number' });
-                }
+                createdBy = existingemployee.fullname;
+                createdByImg = existingemployee.empImg;
+            }
 
+            const myDate = new Date();
+            const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
+            const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
 
-                //already check mobile for client
-                if (clientMobile !== Client.clientMobile) {
+            // Update profile fields
+            Client.clientFullName = clientFullName || Client.clientFullName;
+            Client.clientEmail = clientEmail || Client.clientEmail;
+            Client.clientMobile = clientMobile || Client.clientMobile;
+            Client.clientCompany = clientCompany || Client.clientCompany;
+            Client.clientAddress = clientAddress || Client.clientAddress;
+            Client.clientCity = clientCity || Client.clientCity;
+            Client.clientState = clientState || Client.clientState;
+            Client.clientCountry = clientCountry || Client.clientCountry;
+            Client.clientZip = clientZip || Client.clientZip;
+            Client.clientLocation.coordinates[0] = lat || Client.clientLocation.coordinates[0];
+            Client.clientLocation.coordinates[1] = long || Client.clientLocation.coordinates[1];
+            Client.clientDocument = uploadedFile || Client.clientDocument;
+            Client.vendorId = vendorId || Client.vendorId;
+            Client.type = type || Client.type;
+            Client.createdBy = createdBy || Client.createdBy;
+            Client.createdByImg = createdByImg || Client.createdByImg;
 
-                    const existingMobile = await clientModel.findOne({ clientMobile });
+            await Client.save();
 
+            res.status(200).json({ message: 'Client updated successfully' });
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
 
-                    if (existingMobile && existingMobile._id.toString() !== clientId) {
-                        return res.status(400).json({ message: 'Mobile number already exists for another client' });
-                    }
-                }
-
-
-                //already check email for client
-                if (clientEmail !== Client.clientEmail) {
-
-                    const existingEmail = await clientModel.findOne({ clientEmail });
-
-
-                    if (clientEmail && existingEmail && existingEmail._id.toString() !== clientId) {
-                        return res.status(400).json({ message: 'Email Id already exists for another client' });
-                    }
-                }
-
-
-                let createdBy = '';
-                let createdByImg = '';
-                if (type == 'vendor') {
-
-                    const existingvendor = await vendorModel.findOne({ _id: vendorId });
-
-                    createdBy = existingvendor.vendorName;
-                    createdByImg = existingvendor.empImg;
-                } else if (type == 'employee') {
-
-                    const existingvendor = await employeeModel.findOne({ _id: vendorId });
-                    createdBy = existingvendor.fullname;
-                    createdByImg = existingvendor.empImg;
-                    //createdBy = "ashraf" **it is not accesible by this
-
-                }
-
-                const myDate = new Date();
-                const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-                const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
-
-                // Update profile fields
-                Client.clientFullName = clientFullName || Client.clientFullName;
-                Client.clientEmail = clientEmail || Client.clientEmail;
-                Client.clientMobile = clientMobile || Client.clientMobile;
-                Client.clientCompany = clientCompany || Client.clientCompany;
-                Client.clientAddress = clientAddress || Client.clientAddress;
-
-                Client.clientCity = clientCity || Client.clientCity;
-                Client.clientState = clientState || Client.clientState;
-                Client.clientCountry = clientCountry || Client.clientCountry;
-                Client.clientZip = clientZip || Client.clientZip;
-
-                Client.clientLocation.coordinates[0] = lat || Client.clientLocation.coordinates[0];
-                Client.clientLocation.coordinates[1] = long || Client.clientLocation.coordinates[1];
-
-                Client.clientDocument = uploadedFile || Client.clientDocument;
-                Client.vendorId = vendorId || Client.vendorId;
-                Client.type = type || Client.type;
-                Client.createdBy = createdBy || Client.createdBy;
-                Client.createdByImg = createdByImg || Client.createdByImg;
-
-                await Client.save();
-
-                res.status(200).json({ message: 'Client updated successfully' });
-            }); //multer
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: 'Internal Server Error' });
-        }
-
-    };
 
 
     //Client delete

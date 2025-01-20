@@ -6,25 +6,21 @@ const empSchema = new mongoose.Schema({
 
     vendorId: {
         type: String,
-
     },
 
     fullname: {
         type: String,
-
     },
 
 
     mobile: {
         type: String,
         required: true,
-
     },
 
 
     companyName: {
         type: String,
-
     },
 
 

@@ -52,7 +52,7 @@ export  const  initializeSocket=(server)=> {
   });
 
   wss.on('listening', () => {
-    console.log('WebSocket server is listening on ws://localhost:4001');
+    console.log(`WebSocket server is listening on ws://localhost:${process.env.PORT}`);
   });
 
   process.on('uncaughtException', (error) => {

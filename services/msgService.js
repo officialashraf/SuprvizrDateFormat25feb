@@ -5,9 +5,9 @@ const MSG91_AUTH_KEY = '409988AMtNHmzGsn65ddab09P1'; // Replace with your actual
 
 
 export const sendOTP = async (mobileNo='',otpCode='') => {
-  // console.log('mobileNo',mobileNo);
-
- 
+   console.log('mobileNo',mobileNo);
+  
+     
   try {
     const options = {
       method: 'POST',
@@ -15,6 +15,9 @@ export const sendOTP = async (mobileNo='',otpCode='') => {
       headers: {
         'Content-Type': 'application/json',
         'authkey': MSG91_AUTH_KEY, // Replace with your actual authkey
+
+
+
       },
       data: {
         "template_id": "66cdbefcd6fc0563412229b3",
@@ -29,11 +32,16 @@ export const sendOTP = async (mobileNo='',otpCode='') => {
   
     const response = await axios.request(options);
     console.log('OTP sent successfully:', response.data);
+   return response.data
+    
   } catch (error) {
-    console.error('Error sending OTP:', error);
-  }
-  
-  };
+    if (error.response) {
+        console.error('Error response from MSG91:', error.response.data);
+    } else {
+        console.error('Error sending OTP:', error);
+    }
+}
+ };
 
 
 

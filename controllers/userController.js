@@ -11,7 +11,7 @@ import  trackModel from '../models/trackModel.js';
 import  employeeModel from '../models/employeeModel.js';
 import  vendorModel from '../models/vendorModel.js';
 
-//import {generateOTP , isValidEmail,isValidMobile,isValidPassword, parseCoordinates,calculateDistanceAndDuration}  from '../services/userService.js';
+import {getLocation, isValidEmail,isValidMobile,isValidPassword, parseCoordinates,calculateDistanceAndDuration}  from '../services/userService.js';
 import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
 
 import moment from 'moment-timezone';
@@ -33,7 +33,7 @@ import jwt from 'jsonwebtoken'
 
 
 
-      if (!await userService.isValidMobile(mobile)) {
+      if (!await isValidMobile(mobile)) {
         return res.status(400).json({ message: 'Invalid mobile number' });
       }
 
@@ -68,7 +68,7 @@ import jwt from 'jsonwebtoken'
   //     }
 
   //     const user = await User.findOne({ mobile: mobileNumber });
-  //     // const otpCode = await userService.generateOTP();
+  //     // const otpCode = await generateOTP();
   //     const otpCode = "1234";
 
   //     if (!user) {
@@ -117,7 +117,7 @@ import jwt from 'jsonwebtoken'
       // Check if the mobile number exists in the vendor or employee model
       const vendor = await vendorModel.findOne({ vendorMobile: mobileNumber });
       const employee = await employeeModel.findOne({ mobile: mobileNumber });
-      const otpCode = await userService.generateOTP();
+      const otpCode = await generateOTP();
   
       // Get the current date and future date in Asia/Kolkata timezone
       const currentDateIST = moment.tz('Asia/Kolkata').startOf('day').format('YYYY-MM-DD');
@@ -184,7 +184,7 @@ import jwt from 'jsonwebtoken'
 
 
       // Generate an OTP (for example, a 6-digit numeric code)
-      // const otpCode = await userService.generateOTP();
+      // const otpCode = await generateOTP();
       const otpCode = "1234";
 
       const userId = user._id;
@@ -357,7 +357,7 @@ import jwt from 'jsonwebtoken'
 
 
 
-      if (!await userService.isValidMobile(mobile)) {
+      if (!await isValidMobile(mobile)) {
         return res.status(400).json({ message: 'Invalid mobile number' });
       }
 
@@ -381,7 +381,7 @@ import jwt from 'jsonwebtoken'
       // Update password if newPassword is provided
       // if (newPassword) {
       //   // Hash the new password
-      //   const hashedPassword = await userService.hashPassword(newPassword);
+      //   const hashedPassword = await hashPassword(newPassword);
       //   user.password = hashedPassword;
       // }
 
@@ -429,10 +429,10 @@ import jwt from 'jsonwebtoken'
   //       const locationInLatLong = originLat + ',' + originLong;
   //       const locationOutLatLong = destinationLat + ',' + destinationLong;
 
-  //       const originCoords = await userService.parseCoordinates(locationInLatLong);
-  //       const destinationCoords = await userService.parseCoordinates(locationOutLatLong);
+  //       const originCoords = await parseCoordinates(locationInLatLong);
+  //       const destinationCoords = await parseCoordinates(locationOutLatLong);
 
-  //       const result = await userService.calculateDistanceAndDuration(originCoords, destinationCoords);
+  //       const result = await calculateDistanceAndDuration(originCoords, destinationCoords);
 
   //       distance = result.data.rows[0].elements[0].distance.text;
   //       duration = result.data.rows[0].elements[0].duration.text;
@@ -538,7 +538,7 @@ import jwt from 'jsonwebtoken'
         const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
         const createdAt = currentDateIST.format('YYYY-MM-DD');
 
-      const locationGet = await userService.getLocation(lat, long);
+      const locationGet = await getLocation(lat, long);
 
         // Save gps record
         const savedLogout = new logoutModel({
