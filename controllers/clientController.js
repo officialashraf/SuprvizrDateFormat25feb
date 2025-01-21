@@ -191,32 +191,75 @@ const upload = multer({ storage }).single("clientDocument");
 
     // },
 
-    export const  clientList = async (req, res) => {
+    // export const  clientList = async (req, res) => {
+    //     try {
+    //         const { vendorId } = req.params;
+    
+    //         // Fetch employees with the specified vendorId
+    //         const employees = await employeeModel.find({ vendorId });
+    //         const employeeIds = employees.map(employee => employee._id);
+    
+    //         // Find clients linked to vendorId or any of the employeeIds, sorted by creation date
+    //         const clientList = await clientModel.find({
+    //             vendorId: { $in: [vendorId, ...employeeIds] }
+    //         })
+    //         //.sort({ created: -1 });
+    
+    //         // If clientList is empty, return 404
+    //         if (clientList.length === 0) {
+    //             return res.status(404).json({ message: 'No clients found' });
+    //         }
+    
+    //         res.status(200).json(clientList);
+    //     } catch (error) {
+    //         console.error('Error fetching clients:', error);
+    //         res.status(500).json({ message: 'Internal Server Error', error });
+    //     }
+    // };
+
+    export const clientList = async (req, res) => {
         try {
-            const { vendorId } = req.params;
+            const { userId, userType } = req.params; // userType will tell us if the requester is a vendor or employee.
     
-            // Fetch employees with the specified vendorId
-            const employees = await employeeModel.find({ vendorId });
-            const employeeIds = employees.map(employee => employee._id);
+            // Check if the user is a vendor or employee
+            if (userType === 'vendor') {
+                // Fetch employees linked to this vendor
+                const employees = await employeeModel.find({ vendorId: userId });
+                //const employeeIds = employees.map(employee => employee._id);
     
-            // Find clients linked to vendorId or any of the employeeIds, sorted by creation date
-            const clientList = await clientModel.find({
-                vendorId: { $in: [vendorId, ...employeeIds] }
-            })
-            //.sort({ created: -1 });
+                // Fetch clients for the vendor or its employees
+                const clientList = await clientModel.find({
+                    $or: [
+                        { vendorId: userId }
+                    ]
+                });
     
-            // If clientList is empty, return 404
-            if (clientList.length === 0) {
-                return res.status(404).json({ message: 'No clients found' });
+                // Return client list or 404 if empty
+                if (clientList.length === 0) {
+                    return res.status(404).json({ message: 'No clients found for the vendor.' });
+                }
+    
+                return res.status(200).json(clientList);
+            } else if (userType === 'employee') {
+                // Fetch clients for the specific employee
+                const clientList = await clientModel.find({ vendorId: userId });
+    
+                // Return client list or 404 if empty
+                if (clientList.length === 0) {
+                    return res.status(404).json({ message: 'No clients found for the employee.' });
+                }
+    
+                return res.status(200).json(clientList);
+            } else {
+                // Invalid userType
+                return res.status(400).json({ message: 'Invalid userType. Must be "vendor" or "employee".' });
             }
-    
-            res.status(200).json(clientList);
         } catch (error) {
             console.error('Error fetching clients:', error);
             res.status(500).json({ message: 'Internal Server Error', error });
         }
     };
-
+    
 
     //For clientDetails
     export const  clientDetails = async (req, res) => {

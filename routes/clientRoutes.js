@@ -7,7 +7,7 @@ const upload = multer();
 
 
 router.post('/create',authorize(['employee', 'vendor','admin']), createClient);// Define your all task Controller route
-router.get('/list/:vendorId',authorize(['employee','vendor','admin']) , clientList);//vendor id issue
+router.get('/list/:userId/:userType',authorize(['employee','vendor','admin']) , clientList);//vendor id issue
 router.get('/details/:clientId', clientDetails);
 router.delete('/delete/:clientId',authorize(['employee','vendor','admin']), clientDelete);
 router.post('/update-client',authorize(['employee','vendor','admin']), updateClients);

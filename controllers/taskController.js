@@ -198,66 +198,160 @@ const upload = multer({ storage }).single("taskDocument");
 
 
   };
-   //Task list 
+  //  //Task list 
+  //  export const taskList = async (req, res) => {
+  //      try {
+  //          const { userId, userType } = req.params; // userId can be vendorId or employeeId
+  //          const { status, taskDate } = req.query;
+   
+  //          if (!userId || !userType) {
+  //              return res.status(400).json({ message: "User ID and userType are required." });
+  //          }
+   
+  //          // Build the query
+  //          let query = {};
+   
+  //          if (userType === 'vendor') {
+  //              // Fetch employees linked to the vendor
+  //              const employees = await employeeModel.find({ vendorId: userId });
+  //              const employeeIds = employees.map(employee => employee._id);
+   
+  //              // Include tasks for the vendor and their employees
+  //              query.vendorId = { $in: [userId, ...employeeIds] };
+  //          } else if (userType === 'employee') {
+  //              // Include tasks for the specific employee only
+  //              query.userId = userId;
+  //          } else {
+  //              return res.status(400).json({ message: "Invalid userType. Must be 'vendor' or 'employee'." });
+  //          }
+   
+  //          // Handle taskDate filter
+  //          if (taskDate) {
+  //              const startDate = moment(taskDate, 'YYYY-MM-DD').startOf('day').toDate();
+  //              const endDate = moment(taskDate, 'YYYY-MM-DD').endOf('day').toDate();
+  //              query.taskDate = { $gte: startDate, $lt: endDate };
+  //          }
+   
+  //          // Handle status filter
+  //          if (status !== undefined && ['0', '1', '2'].includes(status)) {
+  //              query.status = status === '2' ? '0' : status;
+  //          }
+   
+  //          // Fetch tasks from the database
+  //          const tasks = await taskModel.find(query, '-taskAddress')
+  //          //.sort({ taskDate: 1 });
+  //            console.log("tasks", tasks)
+  //          if (!tasks || tasks.length === 0) {
+  //              return res.status(200).json({ tasks: [] });
+  //          }
+   
+  //          // Format tasks
+  //          const formattedTaskList = tasks.map(task => {
+  //              const parsedTaskDate = moment.utc(task.taskDate).toDate();
+  //              const hoursDiff = moment.utc().diff(parsedTaskDate, 'hours');
+   
+  //              return {
+  //                  ...task.toObject(),
+  //                  taskDate: moment.utc(task.taskDate).format('YYYY-MM-DD hh:mm A'),
+  //                  taskEndDate: task.taskEndDate
+  //                      ? moment.utc(task.taskEndDate).format('YYYY-MM-DD hh:mm A')
+  //                      : '',
+  //                  shouldInclude: status === '2' ? hoursDiff >= 24 : hoursDiff <= 24
+  //              };
+  //          }).filter(task => status !== '1' || task.shouldInclude);
+   
+  //          const totalTask = formattedTaskList.length;
+  //          return res.status(200).json({ totalTask, tasks: formattedTaskList });
+  //      } catch (error) {
+  //          console.error('Error fetching task list:', error);
+  //          return res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  //      }
+  //  };
+   
   export const taskList = async (req, res) => {
     try {
-      const { vendorId } = req.params;
-      const { status, taskDate } = req.query;
-  
-      if (!vendorId) {
-        return res.status(400).json({ message: "Vendor ID is required." });
-      }
-  
-      // Fetch employees with the given vendorId
-      const employees = await employeeModel.find({ vendorId: vendorId });
-      const employeeIds = employees.map(employee => employee._id);
-  
-      // Build the query
-      let query = { vendorId: { $in: [vendorId, ...employeeIds] } };
-  
-      // Handle taskDate filter
-      if (taskDate) {
-        const startDate = moment(taskDate, 'YYYY-MM-DD').startOf('day').toDate();
-        const endDate = moment(taskDate, 'YYYY-MM-DD').endOf('day').toDate();
-        query.taskDate = { $gte: startDate, $lt: endDate };
-      }
-  
-      // Handle status filter
-      if (status !== undefined && ['0', '1', '2'].includes(status)) {
-        query.status = status === '2' ? '0' : status;
-      }
-  
-      // Fetch tasks from the database
-      const tasks = await taskModel.find(query, '-taskAddress').sort({ taskDate: 1 });
-  
-      if (!tasks || tasks.length === 0) {
-        return res.status(200).json({ tasks: [] });
-      }
-  
-      // Format tasks
-      const formattedTaskList = tasks.map(task => {
-        const parsedTaskDate = moment.utc(task.taskDate).toDate();
-        const hoursDiff = moment.utc().diff(parsedTaskDate, 'hours');
-  
-        return {
-          ...task.toObject(),
-          taskDate: moment.utc(task.taskDate).format('YYYY-MM-DD hh:mm A'),
-          taskEndDate: task.taskEndDate 
-            ? moment.utc(task.taskEndDate).format('YYYY-MM-DD hh:mm A') 
-            : '',
-          shouldInclude: status === '2' ? hoursDiff >= 24 : hoursDiff <= 24
-        };
-      }).filter(task => status !== '1' || task.shouldInclude);
-      const totalTask = formattedTaskList.length
-      return res.status(200).json({ totalTask, tasks: formattedTaskList });
+        const { userId, userType } = req.params; // userId can be vendorId or employeeId
+        const { status, taskDate } = req.query;
+
+        if (!userId || !userType) {
+            return res.status(400).json({ message: "User ID and userType are required." });
+        }
+
+        let query = {};
+
+        if (userType === 'vendor') {
+            // Vendor ke tasks
+            query.userId = userId; // AsuserId" stores vendorId for vendor-created tasks
+        } else if (userType === 'employee') {
+            // Employee ke tasks
+            query.userId = userId; // Assuming "createdBy" stores employeeId for employee-created tasks
+        } else {
+            return res.status(400).json({ message: "Invalid userType. Must be 'vendor' or 'employee'." });
+        }
+
+        // Filter tasks by taskDate
+        if (taskDate) {
+            const startDate = moment(taskDate, 'YYYY-MM-DD').startOf('day').toDate();
+            const endDate = moment(taskDate, 'YYYY-MM-DD').endOf('day').toDate();
+            query.taskDate = { $gte: startDate, $lt: endDate };
+        }
+
+        // Filter tasks by status
+        if (status !== undefined && ['0', '1', '2'].includes(status)) {
+            query.status = status === '2' ? '0' : status;
+        }
+
+        // Fetch tasks
+        const tasks = await taskModel.find(query);
+        return res.status(200).json({ totalTasks: tasks.length, tasks });
     } catch (error) {
-      console.error('Error fetching task list:', error);
-      return res.status(500).json({ message: 'Internal Server Error', error: error.message });
+        console.error('Error in getUserTasks API:', error);
+        return res.status(500).json({ message: 'Internal Server Error', error: error.message });
     }
-  };
-  
+};
 
   //task Details By Employee id under working
+  export const taskListByVendor = async (req, res) => {
+    try {
+        const { vendorId } = req.params; // Vendor ID
+        const { status, taskDate } = req.query;
+
+        if (!vendorId) {
+            return res.status(400).json({ message: "Vendor ID is required." });
+        }
+
+        // Fetch employees linked to the vendor
+        const employees = await employeeModel.find({ vendorId });
+        const employeeIds = employees.map(employee => employee._id);
+
+        // Build query for vendor and employee tasks
+        const query = {
+            $or: [
+                { userId: vendorId }, // Vendor's tasks
+                { userId: { $in: employeeIds } } // Employees' tasks
+            ]
+        };
+
+        // Filter tasks by taskDate
+        if (taskDate) {
+            const startDate = moment(taskDate, 'YYYY-MM-DD').startOf('day').toDate();
+            const endDate = moment(taskDate, 'YYYY-MM-DD').endOf('day').toDate();
+            query.taskDate = { $gte: startDate, $lt: endDate };
+        }
+
+        // Filter tasks by status
+        if (status !== undefined && ['0', '1', '2'].includes(status)) {
+            query.status = status === '2' ? '0' : status;
+        }
+
+        // Fetch tasks
+        const tasks = await taskModel.find(query);
+        return res.status(200).json({ totalTasks: tasks.length, tasks });
+    } catch (error) {
+        console.error('Error in getVendorAndEmployeeTasks API:', error);
+        return res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    }
+};
 
   export const taskListByEmp= async (req, res) => {
 
