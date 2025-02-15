@@ -18,7 +18,7 @@ import polyline  from '../models/polylineModel.js';
                 userType: type,
                 lat: lat,
                 long: long,
-                createdAt: new Date()
+                createdAt: new Date().toISOString()
             });
     
             await newPolyline.save();

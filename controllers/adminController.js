@@ -6,8 +6,6 @@ import employeeModel from '../models/employeeModel.js'
 import { broadcastLocationUpdate } from '../socket.js'
 
 
- 
-
 
   //check admin login for web 
   export const adminLogin = async (req, res) => {
@@ -56,7 +54,7 @@ import { broadcastLocationUpdate } from '../socket.js'
       .exec();
 
       // Check if vendorList array is empty
-      if (!vendorList || vendorList.length === 0) {
+      if (!vendorList || vendorList.length === 0 ) {
         return res.json({ status: false, message: 'Vendor list not found' });
       }
   

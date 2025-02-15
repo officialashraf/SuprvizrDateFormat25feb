@@ -114,8 +114,8 @@ const upload = multer({ storage }).single("clientDocument");
 
 
                 const myDate = new Date();
-                const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-                const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+                const currentDateIST = moment.utc(myDate);
+                const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
 
 
                 const newClient = new clientModel({
@@ -487,8 +487,8 @@ export  const updateClients = async (req, res) => {
             }
 
             const myDate = new Date();
-            const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-            const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+            const currentDateIST = moment.utc(myDate);
+            const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
 
             // Update profile fields
             Client.clientFullName = clientFullName || Client.clientFullName;
@@ -507,6 +507,8 @@ export  const updateClients = async (req, res) => {
             Client.type = type || Client.type;
             Client.createdBy = createdBy || Client.createdBy;
             Client.createdByImg = createdByImg || Client.createdByImg;
+            Client.updatedAt = currentDate || Client.updatedAt;// Save UTC date
+
 
             await Client.save();
 

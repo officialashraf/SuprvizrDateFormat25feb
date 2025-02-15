@@ -5,7 +5,6 @@ const clientSchema = new mongoose.Schema({
 
     vendorId: {
         type: String,
-
     },
 
     clientFullName: {

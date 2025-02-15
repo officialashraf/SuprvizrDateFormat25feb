@@ -132,8 +132,8 @@ const upload = multer({ storage }).single("taskDocument");
         }
 
         const myDate = new Date();
-        const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-        const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+        const currentDateIST = moment.utc(myDate);
+        const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
 
 
         let latitude = lat !=undefined &&  long !='' ? parseFloat(lat) :'';
@@ -400,7 +400,7 @@ const upload = multer({ storage }).single("taskDocument");
 
           formattedTaskList = tasks
           .map(task => {
-            const parsedTaskDate = moment(task.taskDate, 'YYYY-MM-DD hh:mm A').toDate();
+            const parsedTaskDate = moment(task.taskDate, 'YYYY-MM-DD HH:mm A').toDate();
             const hoursDiff = moment().diff(parsedTaskDate, 'hours');
             
             return {
@@ -419,8 +419,8 @@ const upload = multer({ storage }).single("taskDocument");
             formattedTaskList = tasks.map(task => ({
               ...task.toObject(),
               // taskEndDate: moment(task.taskEndDate).format('YYYY-MM-DD hh:mm A'),
-              taskDate: moment(task.taskDate).format('YYYY-MM-DD hh:mm A'),
-              taskEndDate: (task.taskEndDate !=null && task.taskEndDate !='')? moment(task.taskEndDate).format('YYYY-MM-DD hh:mm A') :'',
+              taskDate: moment(task.taskDate).format('YYYY-MM-DD HH:mm A'),
+              taskEndDate: (task.taskEndDate !=null && task.taskEndDate !='')? moment(task.taskEndDate).format('YYYY-MM-DD HH:mm A') :'',
             }));
         }
         
@@ -513,8 +513,8 @@ const upload = multer({ storage }).single("taskDocument");
 
 
         const myDate = new Date();
-        const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-        const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+        const currentDateIST = moment.utc(myDate);
+        const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
 
         // task.clientId = clientId || task.clientId;
         // task.clientName = clientName || task.clientName;
@@ -587,8 +587,8 @@ const upload = multer({ storage }).single("taskDocument");
         const { taskID, notes, lat, long } = req.body;
           //  console.log('taskiddd',taskID)
         const myDate = new Date();
-        const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-        const taskEndDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+        const currentDateIST = moment.utc(myDate);
+        const taskEndDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
 
 
         // Check if any of the properties is empty or falsy
@@ -681,7 +681,7 @@ console.log("taskDetails", task)
            userId: task.userId,
            locationGet,
             status: task.status, 
-            updatedAt: new Date(),
+            updatedAt: new Date().toISOString(),
          };
          broadcastLocationUpdate(taskUpdate)
 

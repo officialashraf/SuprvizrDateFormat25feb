@@ -120,8 +120,8 @@ import jwt from 'jsonwebtoken'
       const otpCode = await generateOTP();
   
       // Get the current date and future date in Asia/Kolkata timezone
-      const currentDateIST = moment.tz('Asia/Kolkata').startOf('day').format('YYYY-MM-DD');
-      const futureDateIST = moment.tz('Asia/Kolkata').startOf('day').add(15, 'days').format('YYYY-MM-DD');
+      const currentDateIST = moment.utc().startOf('day').format('YYYY-MM-DD');
+      const futureDateIST = moment.utc().startOf('day').add(15, 'days').format('YYYY-MM-DD');
   
       // If the mobile number exists in the vendor model
       if (vendor) {
@@ -534,8 +534,8 @@ import jwt from 'jsonwebtoken'
         await userExisting.save();
         //
         const myDate = new Date();
-        const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-        const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+        const currentDateIST = moment.utc(myDate);
+        const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
         const createdAt = currentDateIST.format('YYYY-MM-DD');
 
       const locationGet = await getLocation(lat, long);

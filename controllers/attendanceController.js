@@ -22,8 +22,8 @@ import moment from 'moment-timezone';0
 
 
       const myDate = new Date();
-      const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-      const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+      const currentDateIST = moment.utc(myDate);
+      const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
       const createdAt = currentDateIST.format('YYYY-MM-DD');
 
 
@@ -77,8 +77,8 @@ import moment from 'moment-timezone';0
 
 
       const myDate = new Date();
-      const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-      const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+      const currentDateIST = moment.utc(myDate);
+      const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
       const createdAt = currentDateIST.format('YYYY-MM-DD');
 
       const locationGet = await getLocation(lat, long);
@@ -197,8 +197,8 @@ import moment from 'moment-timezone';0
       }
 
       const myDate = new Date();
-      const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-      const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+      const currentDateIST = moment.utc(myDate);
+      const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
       const createdAt = currentDateIST.format('YYYY-MM-DD');
 
       //for even odd condition
@@ -228,8 +228,8 @@ import moment from 'moment-timezone';0
 
         }
       }
-const agoCreatedAt  = moment.tz(myDate, 'Asia/Kolkata')
-const agoDate = agoCreatedAt.format('YYYY-MM-DD hh:mm A');
+const agoCreatedAt  = moment.utc(myDate)
+const agoDate = agoCreatedAt.format('YYYY-MM-DD HH:mm A');
 //const agoDate = agoCreatedAt.format('YYYY-MM-DD');
 
 console.log(agoDate); // Example Output: 2025-01-08 07:05 PM
@@ -322,17 +322,17 @@ console.log(agoCreatedAt); // Example Output: 2025-01-08
   export const autologOut=  async (req, res) => {
     try {
 
-      const currentDateIST = moment.tz(new Date(), 'Asia/Kolkata');
-      const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+      const currentDateIST = moment.utc(new Date());
+      const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
       const createdAt = currentDateIST.format('YYYY-MM-DD');
 
       const agoDate = new Date().toISOString();
 
       const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
+      startOfDay.setUTCHours(0, 0, 0, 0);
 
       const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
+      endOfDay.setUTCHours(23, 59, 59, 999);
 
 
       const userAttendances22 = await attendanceModel.aggregate([

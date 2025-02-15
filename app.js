@@ -44,7 +44,7 @@ app.get(baseRoute, (req, res) => {
 });
 
 // Define routes
- app.use(`${baseRoute}/user`, userRoutes);
+ app.use(`${baseRoute}/user`, userRoutes);  
 app.use(`${baseRoute}/attendance`, attendenceRoute);
  app.use(`${baseRoute}/task`, taskRoutes);
 app.use(`${baseRoute}/client`, clientRoutes);

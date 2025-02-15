@@ -58,9 +58,9 @@ const upload = multer({ storage }).single("profileImg");
             const otpCode = await generateOTP();
 
             // Get the current date in Asia/Kolkata timezone, normalized to start of the day
-            const currentDateIST = moment.tz('Asia/Kolkata').startOf('day').format('YYYY-MM-DD');
+            const currentDateIST = moment.utc().startOf('day').format('YYYY-MM-DD');
 
-            const futureDateIST = moment.tz('Asia/Kolkata').startOf('day').add(15, 'days').format('YYYY-MM-DD');
+            const futureDateIST = moment.utc().startOf('day').add(15, 'days').format('YYYY-MM-DD');
 
             if (!vendor) {
                 // Check if the mobile number exists in either the vendor or employee model
@@ -75,7 +75,7 @@ const upload = multer({ storage }).single("profileImg");
                     return res.status(400).json({ message: 'Mobile number already exists in the employee panel' });
                 }
 
-                const currentDateTimeIST = moment.tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
+                const currentDateTimeIST = moment.utc().format('YYYY-MM-DD HH:mm:ss');
 
                 // Create a new vendor with the mobile number and OTP
                 const newVendor = new vendorModel({
@@ -164,7 +164,7 @@ const upload = multer({ storage }).single("profileImg");
                     return res.status(400).json({ message: 'Your account is currently inactive. Please contact the administrator' });
                 }
 
-                const currentDateIST = moment.tz('Asia/Kolkata').startOf('day');
+                const currentDateIST = moment.utc().startOf('day');
                 const subscriptionEndDate = moment(storedOTP.subEndDate).startOf('day');
 
                 if (currentDateIST <= subscriptionEndDate) {
@@ -1035,8 +1035,8 @@ const upload = multer({ storage }).single("profileImg");
                     if (taskData) {
                         const formattedTask = {
                             ...taskData.toObject(),
-                            taskDate: moment(taskData.taskDate).format('YYYY-MM-DD hh:mm A'),
-                            taskEndDate: (taskData.taskEndDate != null && taskData.taskEndDate != '') ? moment(taskData.taskEndDate).format('YYYY-MM-DD hh:mm A') : ''
+                            taskDate: moment.utc(taskData.taskDate).format('YYYY-MM-DD HH:mm A'),
+                            taskEndDate: (taskData.taskEndDate != null && taskData.taskEndDate != '') ? moment.utc(taskData.taskEndDate).format('YYYY-MM-DD HH:mm A') : ''
                         };
                         mergedDetails.push(formattedTask);
                     }
@@ -1215,8 +1215,8 @@ const upload = multer({ storage }).single("profileImg");
 
             //
             const myDate = currentDate;
-            const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-            const currentDate1 = currentDateIST.format('YYYY-MM-DD hh:mm A');
+            const currentDateIST = moment.utc(myDate);
+            const currentDate1 = currentDateIST.format('YYYY-MM-DD HH:mm A');
             const createdAt = currentDateIST.format('YYYY-MM-DD');
 
             const locationGet = await getLocation(lat, long);
@@ -1293,8 +1293,8 @@ const upload = multer({ storage }).single("profileImg");
 
             //
             const myDate = new Date();
-            const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-            const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+            const currentDateIST = moment.utc(myDate);
+            const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
             const createdAt = currentDateIST.format('YYYY-MM-DD');
 
             const locationGet = await getLocation(lat, long);

@@ -1,5 +1,4 @@
 
-
   import employeeModel  from '../models/employeeModel.js';
   import attendanceModel  from '../models/attendanceModel.js';
   import taskModel  from '../models/taskModel.js';
@@ -76,9 +75,6 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
 
 
 
-
-
-
     //getEmployee details
     export const getEmployee = async (req, res) => {
         try {
@@ -143,7 +139,7 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
     export const filterEmpType = async (req, res) => {
         try {
             const myDate = new Date();
-            const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
+            const currentDateIST = moment.utc(myDate);
             const providedDate = currentDateIST.format('YYYY-MM-DD');
 
             const { vendorId, userType, attandance_status } = req.body;
@@ -232,6 +228,7 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
         }
     };
 
+
     //employee Login
     // export const employeeLogin = async (req, res) => {
 
@@ -297,8 +294,8 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
            
             const otpCode = await generateOTP();
     
-            const currentDateIST = moment.tz('Asia/Kolkata').startOf('day').format('YYYY-MM-DD');
-            const futureDateIST = moment.tz('Asia/Kolkata').startOf('day').add(15, 'days').format('YYYY-MM-DD');
+            const currentDateIST = moment.utc().startOf('day').format('YYYY-MM-DD');
+            const futureDateIST = moment.utc().startOf('day').add(15, 'days').format('YYYY-MM-DD');
     
             if (existingVendor) {
                 // Vendor login
@@ -326,7 +323,7 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
     
             } else {
                 // Vendor registration and login
-                const currentDateTimeIST = moment.tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
+                const currentDateTimeIST = moment.utc().format('YYYY-MM-DD HH:mm:ss');
     
                 const newVendor = new vendorModel({
                     vendorMobile: mobileNumber,
@@ -386,7 +383,7 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
                     return res.status(400).json({ message: 'Your account is currently inactive. Please contact the administrator' });
                 }
     
-                const currentDateIST = moment.tz('Asia/Kolkata').startOf('day');
+                const currentDateIST = moment.utc().startOf('day');
                 const subscriptionEndDate = moment(user.subEndDate).startOf('day');
     
                 if (currentDateIST > subscriptionEndDate) {
@@ -1329,8 +1326,8 @@ console.log("checkOutRecord", checkOutRecord)
                     if (taskData) {
                         const formattedTask = {
                             ...taskData.toObject(),
-                            taskDate: moment(taskData.taskDate).format('YYYY-MM-DD hh:mm A'),
-                            taskEndDate: (taskData.taskEndDate != null && taskData.taskEndDate != '') ? moment(taskData.taskEndDate).format('YYYY-MM-DD hh:mm A') : ''
+                            taskDate: moment.utc(taskData.taskDate).format('YYYY-MM-DD HH:mm A'),
+                            taskEndDate: (taskData.taskEndDate != null && taskData.taskEndDate != '') ? moment.utc(taskData.taskEndDate).format('YYYY-MM-DD HH:mm A') : ''
                         };
     
                         mergedDetails.push(formattedTask);
