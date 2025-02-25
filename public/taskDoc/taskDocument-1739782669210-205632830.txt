@@ -1,0 +1,75 @@
+get All filter returns
+{
+"id": 35,
+"name": "testFilterd",
+"case id": [],
+"filter_criteria": [
+{
+"source": "social media",
+"keywords": [
+"mahakumbh, bjp, india"
+],
+"platform": [
+"twitter",
+"instagram",
+"facebook",
+"vk",
+"tiktok",
+"youtube",
+"linkedin"
+]
+},{},{} .......................................................{}
+count:20
+
+apply filter returns
+{
+"id": 35,
+"name": "testFilterd",
+"description": "asas",
+"case_id": [],
+"filter_criteria": [
+{
+"source": "social media",
+"keywords": [
+"mahakumbh, bjp, india"
+],
+"platform": [
+"twitter",
+"instagram",
+"facebook",
+"vk",
+"tiktok",
+"youtube",
+"linkedin"
+]
+},
+{
+"source": "social media profile",
+"keywords": [
+"pak, uae"
+],
+"platform": [
+"twitter",
+"instagram",
+"facebook",
+"vk",
+"tiktok",
+"youtube",
+"linkedin"
+]
+},
+{
+"url": [
+"htttp:hbhbhb"
+],
+"source": "rss feed",
+"keywords": [
+"hjbhjggh, hjbhshgs"
+]
+}
+],
+"created_by": 6,
+"created_on": "2025-02-06T07:07:07.371980",
+"modified_by": null,
+"modified_on": null
+}

@@ -323,7 +323,7 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
     
             } else {
                 // Vendor registration and login
-                const currentDateTimeIST = moment.utc().format('YYYY-MM-DD HH:mm:ss');
+                const currentDateTimeIST = moment.utc().format('YYYY-MM-DD HH:mm A');
     
                 const newVendor = new vendorModel({
                     vendorMobile: mobileNumber,

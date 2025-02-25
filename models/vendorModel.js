@@ -82,21 +82,21 @@ const vendorSchema = new mongoose.Schema({
         default: 'active',
     },
     subStartDate: {
-        type: Date,
+        type: String,
         default: '',
       },
     subEndDate: {
-        type: Date,
+        type: String,
         default: '',
     },
     subscriptions: [
         {
           startDate: {
-            type: Date,
+            type:String,
             required: true,
           },
           endDate: {
-            type: Date,
+            type: String,
             required: true,
           },
         },

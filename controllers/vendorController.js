@@ -14,7 +14,7 @@ import logoutModel from  '../models/logoutModel.js';
 // import importANTS from  '../utils/importants';
 
 
-import { generateOTP, getLocation , parseCoordinates, calculateDistanceAndDuration} from  '../services/userService.js';
+import { generateOTP,isValidMobile, getLocation , parseCoordinates, calculateDistanceAndDuration} from  '../services/userService.js';
 import moment from  'moment-timezone';
 import jwt from  'jsonwebtoken';
 
@@ -58,9 +58,11 @@ const upload = multer({ storage }).single("profileImg");
             const otpCode = await generateOTP();
 
             // Get the current date in Asia/Kolkata timezone, normalized to start of the day
-            const currentDateIST = moment.utc().startOf('day').format('YYYY-MM-DD');
+         
+		const myDate = new Date();
+		const currentDateIST = moment.utc(myDate).startOf('day').format('YYYY-MM-DD');
 
-            const futureDateIST = moment.utc().startOf('day').add(15, 'days').format('YYYY-MM-DD');
+            const futureDateIST = moment.utc(myDate).startOf('day').add(15, 'days').format('YYYY-MM-DD');
 
             if (!vendor) {
                 // Check if the mobile number exists in either the vendor or employee model
@@ -75,7 +77,7 @@ const upload = multer({ storage }).single("profileImg");
                     return res.status(400).json({ message: 'Mobile number already exists in the employee panel' });
                 }
 
-                const currentDateTimeIST = moment.utc().format('YYYY-MM-DD HH:mm:ss');
+                const currentDateTimeIST = moment.utc(myDate).format('YYYY-MM-DD HH:mm A');
 
                 // Create a new vendor with the mobile number and OTP
                 const newVendor = new vendorModel({
@@ -222,7 +224,7 @@ const upload = multer({ storage }).single("profileImg");
             }
 
 
-            if (!await userService.isValidMobile(vendorMobile)) {
+            if (!await isValidMobile(vendorMobile)) {
                 return res.status(400).json({ message: 'Invalid mobile number' });
             }
 

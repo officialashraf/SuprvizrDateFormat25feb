@@ -44,6 +44,7 @@ const upload = multer({ storage }).single("taskDocument");
 
 
 
+ 
   export const createTask= async (req, res) => {
     try {
 
@@ -78,7 +79,7 @@ const upload = multer({ storage }).single("taskDocument");
         // check sendor admin or employee
         let createdBy = '';
         let empName = '';
-        if (type == "vendor") {
+        if (type === "vendor") {
 
           const vendorExisting = await vendorModel.findById({ _id: vendorId });
 
@@ -99,7 +100,7 @@ const upload = multer({ storage }).single("taskDocument");
 
         const empextes = await employeeModel.findById({ _id: userId });
 
-        if (type == "vendor" && empextes) {
+        if (type === "vendor" && empextes) {
           empName = empextes.fullname;
 
         } else {
@@ -131,15 +132,20 @@ const upload = multer({ storage }).single("taskDocument");
           clientEmail = "";
         }
 
-        const myDate = new Date();
-        const currentDateIST = moment.utc(myDate);
-        const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
+       const myDate = new Date();
+         const currentDateIST = moment.utc(myDate);
 
+        const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+
+
+
+       
 
         let latitude = lat !=undefined &&  long !='' ? parseFloat(lat) :'';
         let longitude = long !=undefined && long !='' ? parseFloat(long) :'';
 
-        const newTask = new taskModel({
+         const locationGet = await getLocation(latitude, longitude);
+	    const newTask = new taskModel({
           userId,
           clientId,
           clientName,
@@ -148,7 +154,7 @@ const upload = multer({ storage }).single("taskDocument");
           clientMobile: clientMobile,
           taskName,
           taskDate,
-          address,
+          taskAddress : locationGet ,
           type,
           createdBy,
           created: currentDate,
@@ -173,7 +179,6 @@ const upload = multer({ storage }).single("taskDocument");
 
   };
 
-
   // //task Edit
   export const taskEdit= async (req, res) => {
 
@@ -182,7 +187,7 @@ const upload = multer({ storage }).single("taskDocument");
       const { taskID } = req.params;
 
       // Find the task by ID
-      const taskGet = await taskModel.findById(taskID, '-taskAddress');
+      const taskGet = await taskModel.findById(taskID,'-address');
 
       if (!taskGet) {
         return res.status(404).json({ message: 'Task not found' });
@@ -281,7 +286,7 @@ const upload = multer({ storage }).single("taskDocument");
 
         if (userType === 'vendor') {
             // Vendor ke tasks
-            query.userId = userId; // AsuserId" stores vendorId for vendor-created tasks
+            query.vendorId = userId; // AsuserId" stores vendorId for vendor-created tasks
         } else if (userType === 'employee') {
             // Employee ke tasks
             query.userId = userId; // Assuming "createdBy" stores employeeId for employee-created tasks
@@ -302,7 +307,7 @@ const upload = multer({ storage }).single("taskDocument");
         }
 
         // Fetch tasks
-        const tasks = await taskModel.find(query);
+        const tasks = await taskModel.find(query,'-address');
         return res.status(200).json({ totalTasks: tasks.length, tasks });
     } catch (error) {
         console.error('Error in getUserTasks API:', error);
@@ -444,7 +449,7 @@ const upload = multer({ storage }).single("taskDocument");
 
     try {
 
-        const { taskID, userId, clientId, clientName, clientEmail, taskName, taskDate, address, lat, long,notes } = req.body;
+        const { taskID, userId, clientId, clientName, taskAddress,clientEmail, taskName, taskDate, address, lat, long,notes } = req.body;
 
         // Check if any of the properties is empty or falsy
         if (!taskID || !taskName) {
@@ -490,8 +495,6 @@ const upload = multer({ storage }).single("taskDocument");
             }
             //
           task.taskImage =  taskImageFilename;
-
-        
         }
 
         if (req.files['noteImage'] && req.files['noteImage'].length > 0) {
@@ -514,25 +517,26 @@ const upload = multer({ storage }).single("taskDocument");
 
         const myDate = new Date();
         const currentDateIST = moment.utc(myDate);
-        const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
+        const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+        const locationGet = await getLocation(lat, long);
 
-        // task.clientId = clientId || task.clientId;
-        // task.clientName = clientName || task.clientName;
-        // task.clientEmail = clientEmail || task.clientEmail;
+        task.clientId = clientId || task.clientId;
+        task.clientName = clientName || task.clientName;
+        task.clientEmail = clientEmail || task.clientEmail;
         task.taskName = taskName || task.taskName;
         task.userId = userId || task.userId;
         task.taskDate = taskDate || task.taskDate;
         task.address = address || task.address;
         task.created = currentDate || task.created;
         task.taskNotes = notes || task.taskNotes;
-
+	task.taskAddress = locationGet || task.taskAddress;
         //
         const empExisting = await employeeModel.findById({ _id: userId });
         if (empExisting) {
           task.empName = empExisting.fullname;
         }
-        // task.location.coordinates[0] = lat || task.location.coordinates[0];
-        // task.location.coordinates[1] = long || task.location.coordinates[1];
+        task.location.coordinates[0] = lat || task.location.coordinates[0];
+        task.location.coordinates[1] = long || task.location.coordinates[1];
 
         await task.save();
 
@@ -660,7 +664,7 @@ const upload = multer({ storage }).single("taskDocument");
         task.taskEndDate = taskEndDate || task.taskEndDate;
 
         await task.save();
-console.log("taskDetails", task)
+
         //track log inser here
         const newTrack = new trackModel({
           userId: task.userId,
@@ -673,7 +677,7 @@ console.log("taskDetails", task)
           createdAt: taskEndDate,
         })
         await newTrack.save();
-        console.log("taskNew", newTrack)
+       
         // end track log
 
         const taskUpdate = { 

@@ -6,7 +6,7 @@ import { vendorLogin,verifyOTPVendor,getVendorDetails, updateVendor, vendorDelet
 router.post('/vendor-login',vendorLogin);
 router.post('/verify-vendor',verifyOTPVendor);
 router.get('/getVendor/:vendorId',authorize(['admin', 'vendor']),getVendorDetails);
-router.put('/update-vendor/:vendorId', authorize(['admin']),updateVendor);
+router.put('/update-vendor/:vendorId', authorize(['admin','vendor']),updateVendor);
 router.delete('/delete/:vendorId',authorize(['admin']),vendorDelete);
 router.post('/trackVendor',authorize(['admin', 'vendor']),getTrackVendor);//check it
 router.post('/vendorTrackRecord',authorize(['admin', 'vendor']),trackVendorNewRecord);//not working properly

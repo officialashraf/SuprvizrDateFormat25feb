@@ -45,12 +45,12 @@ const taskSchema = new mongoose.Schema({
   },
 
   taskDate: {
-    type: Date,
+    type: String,
     default: '',
   },
 
   taskEndDate: {
-    type: Date,
+    type: String,
     default: '',
   },
 
