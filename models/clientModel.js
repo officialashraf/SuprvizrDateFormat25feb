@@ -73,8 +73,8 @@ const clientSchema = new mongoose.Schema({
     },
 
     created: {
-        type: String,
-        default: '',
+        type: Number,
+        required: true
     },
 
     clientLocation: {

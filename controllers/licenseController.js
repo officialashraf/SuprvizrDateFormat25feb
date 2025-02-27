@@ -43,8 +43,8 @@ export const createLicense = async (req, res) => {
     createdBy = vendorExisting.vendorName;
 
     const myDate = new Date();
-    const currentDateIST = moment.utc(myDate);
-    const currentDate = currentDateIST.format("YYYY-MM-DD HH:mm A");
+    const currentDateIST = myDate.getTime();
+    const currentDate = currentDateIST;
 
     const newLicenses = new licenseModel({
       vendorId,
@@ -108,11 +108,11 @@ export const licenseList = async (req, res) => {
         mobileNumber: item.mobileNumber,
         createdBy: vendorId == item.vendorId ? "You" : item.createdBy, // Add a new field for the status text
         licenseIssueDate: item.licenseIssueDate
-          ? moment.utc(item.licenseIssueDate).format("YYYY-MM-DD")
+          ?item.licenseIssueDate.getTime() 
           : null,
 
         licenseExpireDate: item.licenseExpireDate
-          ? moment.utc(item.licenseExpireDate).format("YYYY-MM-DD")
+          ?item.licenseExpireDate.getTime()
           : null,
         // licenseIssueDate: item.licenseIssueDate ? new Date(item.licenseIssueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : null,
         // licenseExpireDate: item.licenseExpireDate ? new Date(item.licenseExpireDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : null,
@@ -265,8 +265,8 @@ export const licenseUpdate = async (req, res) => {
     let createdBy = vendorExisting ? vendorExisting.vendorName : "";
 
     const myDate = new Date();
-    const currentDateIST = moment.utc(myDate);
-    const currentDate = currentDateIST.format("YYYY-MM-DD HH:mm A");
+    const currentDateIST = myDate.getDate();
+    const currentDate = currentDateIST;
 
     // Update the license record
     const updatedLicense = await licenseModel.findByIdAndUpdate(

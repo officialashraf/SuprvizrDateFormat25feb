@@ -39,8 +39,9 @@ export const createReimbrushment = async (req, res) => {
     }
 
     const myDate = new Date();
-    const currentDateIST = moment.utc(myDate);
-    const currentDate = currentDateIST.format("YYYY-MM-DD HH:mm A");
+    
+    const currentDateIST = myDate.getTime();
+    const currentDate = currentDateIST;
 
     const newReimb = new reimbrushmentModel({
       vendorId,
@@ -144,7 +145,7 @@ export const reimbrushmentList = async (req, res) => {
         statusText, // Add a new field for the status text
         amount: `INR ${item.amount}`, // Format the amount with a dollar sign
         reimbDate: item.reimbDate
-          ? moment.utc(item.reimbDate).format("YYYY-MM-DD")
+          ? item.reimbDate.getTime()
           : null,
 
         // reimbDate: item.reimbDate ? new Date(item.reimbDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : null,
@@ -276,7 +277,7 @@ export const reimbrushmentLista = async (req, res) => {
         //     })
         //   : null,
         reimbDate: item.reimbDate
-          ? moment.utc(item.reimbDate).format("YYYY-MM-DD")
+          ?item.reimbDate.getTime()
           : null,
         documentImg:
           item.reimbrushmentDocument != "" ? reimbrushmentDocument : "",
@@ -459,8 +460,8 @@ export const reimbrushmentUpdate = async (req, res) => {
     }
 
     const myDate = new Date();
-    const currentDateIST = moment.utc(myDate);
-    const currentDate = currentDateIST.format("YYYY-MM-DD HH:mm A");
+    const currentDateIST = myDate.getTime();
+    const currentDate = currentDateIST;
 
     // Retrieve the existing reimbursement record
     const existingReimb = await reimbrushmentModel.findById(reimbId);

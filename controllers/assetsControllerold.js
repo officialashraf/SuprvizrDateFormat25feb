@@ -77,8 +77,8 @@ module.exports = {
 
 
                 const myDate = new Date();
-                const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-                const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+                const currentDateIST = myDate.getTime();
+                const currentDate = currentDateIST;
 
                 const newAssets = new assetsModel({
                     vendorId,
@@ -202,8 +202,8 @@ module.exports = {
                 }
 
                 const myDate = new Date();
-                const currentDateIST = moment.tz(myDate, 'Asia/Kolkata');
-                const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+                const currentDateIST =  myDate.getTime();
+                const currentDate = currentDateIST;
 
                 assets.assetName = assetName || assets.assetName;
                 assets.vendorName = vendorName || assets.vendorName;

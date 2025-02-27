@@ -45,13 +45,11 @@ const taskSchema = new mongoose.Schema({
   },
 
   taskDate: {
-    type: String,
-    default: '',
+    type: Number
   },
 
   taskEndDate: {
-    type: String,
-    default: '',
+    type: Number
   },
 
   address: {
@@ -60,7 +58,7 @@ const taskSchema = new mongoose.Schema({
   },
 
   created: {
-    type: String,
+    type: Number,
     required: true,
   },
 

@@ -22,9 +22,9 @@ import moment from 'moment-timezone';0
 
 
       const myDate = new Date();
-      const currentDateIST = moment.utc(myDate);
-      const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
-      const createdAt = currentDateIST.format('YYYY-MM-DD');
+      const currentDateIST = myDate.getTime();
+      const currentDate = currentDateIST;
+      const createdAt = currentDateIST;
 
 
       const locationGet = await getLocation(lat, long);
@@ -78,8 +78,8 @@ import moment from 'moment-timezone';0
 
       const myDate = new Date();
       const currentDateIST = moment.utc(myDate);
-      const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
-      const createdAt = currentDateIST.format('YYYY-MM-DD');
+      const currentDate = currentDateIST;
+      const createdAt = currentDateIST;
 
       const locationGet = await getLocation(lat, long);
 
@@ -122,10 +122,10 @@ import moment from 'moment-timezone';0
     try {
 
       const { userId } = req.params;
-
+      
       // Find the user by ID
       const attendance = await attendanceModel.find({ userId: userId }).sort({ attnedanceDate: 1 });
-
+console.log("record", attendance)
       if (!attendance) {
         return res.status(404).json({ error: 'Not Found', message: 'Attendance record not found for the given user ID' });
       }
@@ -185,88 +185,67 @@ import moment from 'moment-timezone';0
     }
   };
 
-  export const attendanceInOut=  async (req, res) => {
+  export const attendanceInOut = async (req, res) => {
     try {
-
       const { userId, lat, long, type } = req.body;
-
-      
+  
       // Check if any one empty
       if (!userId || !lat || !long) {
         return res.status(400).json({ error: 'One or more fields are empty' });
       }
-
+  
       const myDate = new Date();
-      const currentDateIST = moment.utc(myDate, 'Asia/Kolkata');
-      const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
-      const createdAt = currentDateIST.format('YYYY-MM-DD');
-
-      //for even odd condition
-      // const userStatusCount = await attendanceModel.countDocuments({ userId });
-      // let status = "IN";
-      // if (userStatusCount % 2 === 1) {
-      //   status = "OUT";
-      // }
-
-      const userStatusCount = await attendanceModel.findOne({ userId: userId, createdAt: createdAt }).sort({ _id: -1 }).exec();
-
+      const currentDateIST = myDate.getTime();
+      const currentDate = currentDateIST;
+      const createdAt = currentDateIST;
+  
+      // Fetch the most recent attendance entry for the user
+      const userStatusCount = await attendanceModel.findOne({ userId: userId,createdAt: { $lte: new Date().getTime() }}).sort({ createdAt: -1 }).exec();
+      console.log("status", userStatusCount);
       let status = '';
-
+  
       if (userStatusCount === null) {
-
         status = "IN";
-
       } else {
-
-        if (userStatusCount.status == 'IN') {
-
+        if (userStatusCount.status === 'IN') {
           status = "OUT";
-
         } else {
-
           status = "IN";
-
         }
       }
-const agoCreatedAt  = moment.utc(myDate, 'Asia/Kolkata')
-const agoDate = agoCreatedAt.format('YYYY-MM-DD hh:mm A');
-//const agoDate = agoCreatedAt.format('YYYY-MM-DD');
-
-console.log(agoDate); // Example Output: 2025-01-08 07:05 PM
-console.log(agoCreatedAt); // Example Output: 2025-01-08
-
+  
+      const agoCreatedAt = myDate.getTime();
+      const agoDate = agoCreatedAt;
+  
+      console.log(agoDate);
+      console.log(agoCreatedAt);
+  
       if (type == 'vendor') {
-
         const filter = { _id: userId };
         const updateDoc = {
           $set: {
             agoDate: agoDate,
             attendanceStatus: status,
             vandorLat: lat,
-            vandorLong: long
-
+            vandorLong: long,
           }
         };
-
+  
         const result = await vendorModel.updateOne(filter, updateDoc);
-
       } else {
-
-
         const filter = { _id: userId };
         const updateDoc = {
           $set: {
             agoDate: agoDate,
             attendanceStatus: status,
             latitude: lat,
-            longitude: long
+            longitude: long,
           }
         };
-
+  
         const result = await employeeModel.updateOne(filter, updateDoc);
-
-
       }
+  
       const locationGet = await getLocation(lat, long);
       const newAttendance = new attendanceModel({
         userId,
@@ -278,11 +257,11 @@ console.log(agoCreatedAt); // Example Output: 2025-01-08
         status,
         createdAt: createdAt,
       });
-
+      console.log("newAttendance", newAttendance);
       const savedAttendance = await newAttendance.save();
       const insertedId = savedAttendance._id;
-
-      //track log inser here
+  
+      // Track log insert here
       const newTrack = new trackModel({
         userId,
         userType: type,
@@ -291,149 +270,111 @@ console.log(agoCreatedAt); // Example Output: 2025-01-08
         lat: lat,
         long: long,
         attendceId: insertedId,
-        createdAt: currentDate,
-      })
+        createdAt: createdAt,
+      });
       await newTrack.save();
-
-      const checkInOutData = { 
+      console.log("newTrack", newTrack);
+  
+      const checkInOutData = {
         userId,
-         type,
-         attnedanceDate: currentDate,
-         attnedanceLat: lat,
-         attnedanceLong: long, 
-         attnedanceAddress: locationGet,
-          createdAt: createdAt,
-          status
-         };
-       broadcastLocationUpdate(checkInOutData)
-      
-      // end track log
-
+        type,
+        attnedanceDate: currentDate,
+        attnedanceLat: lat,
+        attnedanceLong: long,
+        attnedanceAddress: locationGet,
+        createdAt: createdAt,
+        status,
+      };
+      broadcastLocationUpdate(checkInOutData);
+  
       res.status(200).json({ message: 'Attendance ' + status + ' Successfully' });
-
     } catch (error) {
       console.error('Error:', error.message);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   };
-
-
+  
 
   //autolog
-  export const autologOut=  async (req, res) => {
+  export const autologOut = async (req, res) => {
     try {
+        const myDate = new Date();
+        const currentDateIST = myDate.getTime();
+        const createdAt = currentDateIST;
 
-      const currentDateIST = moment.utc(new Date());
-      const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
-      const createdAt = currentDateIST.format('YYYY-MM-DD');
+        const startOfDay = new Date();
+        startOfDay.setUTCHours(0, 0, 0, 0);
+        const startOfDayEpoch = startOfDay.getTime();
 
-      const agoDate = new Date().toISOString();
+        const endOfDay = new Date();
+        endOfDay.setUTCHours(23, 59, 59, 999);
+        const endOfDayEpoch = endOfDay.getTime();
 
-      const startOfDay = new Date();
-      startOfDay.setUTCHours(0, 0, 0, 0);
+        // पूरे दिन की आखिरी एंट्री निकालें
+        const userAttendances22 = await attendanceModel.aggregate([
+            { $match: { createdAt: { $gte: startOfDayEpoch, $lte: endOfDayEpoch } } },
+            { $sort: { _id: -1 } },
+            { $group: { _id: "$userId", lastAttendance: { $first: "$$ROOT" } } }
+        ]);
 
-      const endOfDay = new Date();
-      endOfDay.setUTCHours(23, 59, 59, 999);
+        const userAttendancesArray = userAttendances22.map(item => item.lastAttendance);
 
-
-      const userAttendances22 = await attendanceModel.aggregate([
-        { $match: { createdAt: createdAt } },
-        { $sort: { _id: -1 } },
-        { $group: { _id: "$userId", lastAttendance: { $first: "$$ROOT" } } }
-      ]);
-
-      const userAttendancesArray = userAttendances22.map(item => item.lastAttendance);
-
-      if (userAttendancesArray && userAttendancesArray.length > 0) {
+        if (!userAttendancesArray || userAttendancesArray.length === 0) {
+            return res.status(404).json({ error: "No Record Found" });
+        }
 
         for (const attendance of userAttendancesArray) {
-          if (attendance && attendance.status == 'IN') {
+            if (attendance && attendance.status === 'IN') {
+                const status = "OUT";
 
-            // Check if time is 11:59 PM
-            const currentHour = currentDateIST.hours(); // Get the current hour (0-23)
-            const currentMinute = currentDateIST.minutes(); // Get the current minute (0-59)
-
-            // if (currentHour === 23 && currentMinute === 59) {
-            const status = "OUT";
-
-            if (attendance.type === 'vendor') {
-              // Update vendor attendance
-              await vendorModel.updateOne({ _id: attendance.userId }, {
-                $set: {
-                  agoDate: agoDate,
-                  attendanceStatus: status,
-                  vandorLat: 0,
-                  vandorLong: 0
+                if (attendance.type === 'vendor') {
+                    const updateResult = await vendorModel.updateOne(
+                        { _id: attendance.userId },
+                        { $set: { agoDate: createdAt, attendanceStatus: status, vandorLat: 0, vandorLong: 0 } }
+                    );
+                } else {
+                    const updateResult = await employeeModel.updateOne(
+                        { _id: attendance.userId },
+                        { $set: { agoDate: createdAt, attendanceStatus: status, latitude: 0, longitude: 0 } }
+                    );
                 }
-              });
-            } else {
-              // Update employee attendance
-              await employeeModel.updateOne({ _id: attendance.userId }, {
-                $set: {
-                  agoDate: agoDate,
-                  attendanceStatus: status,
-                  latitude: 0,
-                  longitude: 0
-                }
-              });
-            }
 
-            // Create new attendance record
-            const newAttendance = new attendanceModel({
-              userId: attendance.userId,
-              type: attendance.type,
-              attnedanceDate: currentDate,
-              attnedanceLat: 0,
-              attnedanceLong: 0,
-              attnedanceAddress: "0",
-              status,
-              createdAt: createdAt,
-            });
+                const newAttendance = new attendanceModel({
+                    userId: attendance.userId,
+                    type: attendance.type,
+                    attnedanceDate: createdAt,
+                    attnedanceLat: 0,
+                    attnedanceLong: 0,
+                    attnedanceAddress: "0",
+                    status,
+                    createdAt: createdAt,
+                });
 
-            const savedAttendance = await newAttendance.save();
-            const insertedId = savedAttendance._id;
-            const locationGet = await getLocation(lat, long);
-            // Track log insertion
-            const newTrack = new trackModel({
-              userId: attendance.userId,
-              userType: attendance.type,
-              status,
-              taskId: 0,
-              lat: 0,
-              long: 0,
-              attendceId: insertedId,
-              createdAt: currentDate,
-            });
-            await newTrack.save();
+                const savedAttendance = await newAttendance.save();
+                const insertedId = savedAttendance._id;
 
-            const logOutData = { 
-              userId: attendance.userId,
-               type: attendance.type, 
-              status,
-               attnedanceDate:currentDate,  
-               attnedanceLat: lat, 
-               attnedanceLong: long,
-                attnedanceAddress: locationGet,
-                 createdAt: createdAt, 
+                const logOutData = {
+                    userId: attendance.userId,
+                    type: attendance.type,
+                    status,
+                    attnedanceDate: createdAt,
+                    attnedanceLat: 0,
+                    attnedanceLong: 0,
+                    attnedanceAddress: "0",
+                    createdAt: createdAt,
                 };
-             broadcastLocationUpdate(logOutData);
 
-          }
+                broadcastLocationUpdate(logOutData);
+            }
         }
-        // Send response after inserting new entries
+
         res.status(200).json({ message: 'Attendance Auto Logout Successfully' });
 
-      } else {
-        console.error('Error:', "No Record Found");
-        // return res.status(500).json({ error: 'No Record Found' });
-
-      }
-
     } catch (error) {
-      console.error('Error:', error.message);
-      // res.status(500).json({ error: 'Internal Server Error' });
+        console.error('Error:', error.message);
+        return res.status(500).json({ error: 'Internal Server Error' });
     }
-  };
+};
 
   export const getAttendanceStatus = async (req, res) => {
     try {

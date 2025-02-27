@@ -34,8 +34,8 @@ export const createAsset = async (req, res) => {
     createdBy = vendorExisting ? vendorExisting.vendorName : "";
 
     const myDate = new Date();
-    const currentDateIST = moment.utc(myDate);
-    const currentDate = currentDateIST.format("YYYY-MM-DD HH:mm A");
+    const currentDateIST = myDate.getTime();
+    const currentDate = currentDateIST;
 
     const newAssets = new assetsModel({
       vendorId,
@@ -97,10 +97,10 @@ export const assetsList = async (req, res) => {
         mobileNumber: item.mobileNumber,
         createdBy: vendorId == item.vendorId ? "You" : item.createdBy, // Add a new field for the status text
         lastServiceDate: item.lastServiceDate
-          ? moment.utc(item.lastServiceDate).format("YYYY-MM-DD")
+          ? item.lastServiceDat.getTime()
           : null,
         nextServiceDate: item.nextServiceDate
-          ? moment.utc(item.nextServiceDate).format("YYYY-MM-DD")
+          ? item.nextServiceDat.getTime()
           : null,
         // lastServiceDate: item.lastServiceDate ? new Date(item.lastServiceDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : null,
         // nextServiceDate: item.nextServiceDate ? new Date(item.nextServiceDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : null,
@@ -196,8 +196,8 @@ export const assetsUpdate = async (req, res) => {
     createdBy = vendorExisting ? vendorExisting.vendorName : "";
 
     const myDate = new Date();
-    const currentDateIST = moment.utc(myDate);
-    const currentDate = currentDateIST.format("YYYY-MM-DD HH:mm A");
+    const currentDateIST = myDate.getTime();
+    const currentDate = currentDateIST;
 
     // Retrieve the existing asset record
     const existingAsset = await assetsModel.findById(assetId);

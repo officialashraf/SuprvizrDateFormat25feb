@@ -14,7 +14,7 @@ const attendanceSchema = new mongoose.Schema({
   },
 
   attnedanceDate: {
-    type: String,
+    type:Number,
     required: true,
   },
 
@@ -34,7 +34,7 @@ const attendanceSchema = new mongoose.Schema({
   },
 
   createdAt: {
-    type: String,
+    type: Number,
     default: '',
     index: true, // Index added for createdAt field
   },

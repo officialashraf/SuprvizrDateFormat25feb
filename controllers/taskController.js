@@ -133,11 +133,11 @@ const upload = multer({ storage }).single("taskDocument");
         }
 
        const myDate = new Date();
-         const currentDateIST = moment.utc(myDate);
+         const currentDateIST = myDate.getTime();
 
-        const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+        const currentDate =currentDateIST
 
-
+console.log("currentdate", currentDate)
 
        
 
@@ -145,6 +145,8 @@ const upload = multer({ storage }).single("taskDocument");
         let longitude = long !=undefined && long !='' ? parseFloat(long) :'';
 
          const locationGet = await getLocation(latitude, longitude);
+        const taskDateEpoch = new Date(taskDate).getTime();
+        console.log("taskdate", taskDateEpoch)
 	    const newTask = new taskModel({
           userId,
           clientId,
@@ -153,7 +155,7 @@ const upload = multer({ storage }).single("taskDocument");
           empName: empName,
           clientMobile: clientMobile,
           taskName,
-          taskDate,
+          taskDate:taskDateEpoch,
           taskAddress : locationGet ,
           type,
           createdBy,
@@ -273,47 +275,55 @@ const upload = multer({ storage }).single("taskDocument");
   //      }
   //  };
    
+
+
   export const taskList = async (req, res) => {
-    try {
-        const { userId, userType } = req.params; // userId can be vendorId or employeeId
-        const { status, taskDate } = req.query;
-
-        if (!userId || !userType) {
-            return res.status(400).json({ message: "User ID and userType are required." });
-        }
-
-        let query = {};
-
-        if (userType === 'vendor') {
-            // Vendor ke tasks
-            query.vendorId = userId; // AsuserId" stores vendorId for vendor-created tasks
-        } else if (userType === 'employee') {
-            // Employee ke tasks
-            query.userId = userId; // Assuming "createdBy" stores employeeId for employee-created tasks
-        } else {
-            return res.status(400).json({ message: "Invalid userType. Must be 'vendor' or 'employee'." });
-        }
-
-        // Filter tasks by taskDate
-        if (taskDate) {
-            const startDate = moment(taskDate, 'YYYY-MM-DD').startOf('day').toDate();
-            const endDate = moment(taskDate, 'YYYY-MM-DD').endOf('day').toDate();
-            query.taskDate = { $gte: startDate, $lt: endDate };
-        }
-
-        // Filter tasks by status
-        if (status !== undefined && ['0', '1', '2'].includes(status)) {
-            query.status = status === '2' ? '0' : status;
-        }
-
-        // Fetch tasks
-        const tasks = await taskModel.find(query,'-address');
-        return res.status(200).json({ totalTasks: tasks.length, tasks });
-    } catch (error) {
-        console.error('Error in getUserTasks API:', error);
-        return res.status(500).json({ message: 'Internal Server Error', error: error.message });
-    }
-};
+      try {
+          const { userId, userType } = req.params; // userId can be vendorId or employeeId
+          const { status, taskDate } = req.query;
+  
+          if (!userId || !userType) {
+              return res.status(400).json({ message: "User ID and userType are required." });
+          }
+  
+          let query = {};
+  
+          if (userType === 'vendor') {
+              // Vendor ke tasks
+              query.vendorId = userId; // As userId stores vendorId for vendor-created tasks
+          } else if (userType === 'employee') {
+              // Employee ke tasks
+              query.userId = userId; // Assuming userId stores employeeId for employee-created tasks
+          } else {
+              return res.status(400).json({ message: "Invalid userType. Must be 'vendor' or 'employee'." });
+          }
+  
+          // ✅ Fix: Filter tasks by taskDate (Assuming taskDate is stored as epoch time in DB)
+          if (taskDate) {
+              const startDate = moment(taskDate, 'YYYY-MM-DD').startOf('day').valueOf(); // 00:00:00
+              const endDate = moment(taskDate, 'YYYY-MM-DD').endOf('day').valueOf(); // 23:59:59
+  
+              query.taskDate = { $gte: startDate, $lte: endDate };
+          }
+  
+          console.log("Query: ", query); // Debugging Query Output
+  
+          // ✅ Fix: Convert `status` to match DB values
+          if (status !== undefined && ['0', '1', '2'].includes(status)) {
+              query.status = status === '2' ? '0' : status;
+          }
+  
+          // Fetch tasks excluding `address`
+          const tasks = await taskModel.find(query, '-address');
+  
+          return res.status(200).json({ totalTasks: tasks.length, tasks });
+  
+      } catch (error) {
+          console.error('Error in taskList API:', error);
+          return res.status(500).json({ message: 'Internal Server Error', error: error.message });
+      }
+  };
+  
 
   //task Details By Employee id under working
   export const taskListByVendor = async (req, res) => {
@@ -516,8 +526,8 @@ const upload = multer({ storage }).single("taskDocument");
 
 
         const myDate = new Date();
-        const currentDateIST = moment.utc(myDate);
-        const currentDate = currentDateIST.format('YYYY-MM-DD hh:mm A');
+        const currentDateIST = myDate.getTime();
+        const currentDate =currentDateIST
         const locationGet = await getLocation(lat, long);
 
         task.clientId = clientId || task.clientId;
@@ -591,8 +601,9 @@ const upload = multer({ storage }).single("taskDocument");
         const { taskID, notes, lat, long } = req.body;
           //  console.log('taskiddd',taskID)
         const myDate = new Date();
-        const currentDateIST = moment.utc(myDate);
-        const taskEndDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
+        const currentDateIST = myDate.getTime();
+        const taskEndDate =currentDateIST
+      
 
 
         // Check if any of the properties is empty or falsy

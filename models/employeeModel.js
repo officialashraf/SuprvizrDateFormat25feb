@@ -43,7 +43,7 @@ const empSchema = new mongoose.Schema({
     },
 
     agoDate: {
-        type: String,
+        type: Number,
         default: '',
     },
 

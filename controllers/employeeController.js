@@ -139,8 +139,8 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
     export const filterEmpType = async (req, res) => {
         try {
             const myDate = new Date();
-            const currentDateIST = moment.utc(myDate);
-            const providedDate = currentDateIST.format('YYYY-MM-DD');
+            const currentDateIST = myDate.getTime();
+            const providedDate = currentDateIST;
 
             const { vendorId, userType, attandance_status } = req.body;
 
@@ -293,10 +293,14 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
             const existingEmployee = await employeeModel.findOne({ mobile: mobileNumber });
            
             const otpCode = await generateOTP();
-    
-            const currentDateIST = moment.utc().startOf('day').format('YYYY-MM-DD');
-            const futureDateIST = moment.utc().startOf('day').add(15, 'days').format('YYYY-MM-DD');
-    
+            const myDate = new Date()
+            const currentDateIS = moment.utc().startOf('day').format('YYYY-MM-DD');
+             const futureDateIS = moment.utc().startOf('day').add(15, 'days').format('YYYY-MM-DD');
+            const currentDateIST = moment.utc(currentDateIS, 'YYYY-MM-DD').startOf('day').valueOf();
+            const futureDateIST = moment.utc(futureDateIS, 'YYYY-MM-DD').startOf('day').valueOf();
+            
+            console.log(currentDateIST); // Output in epoch format
+            console.log(futureDateIST); // Output in epoch format
             if (existingVendor) {
                 // Vendor login
                 if (!existingVendor.subEndDate) {
@@ -323,16 +327,17 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
     
             } else {
                 // Vendor registration and login
-                const currentDateTimeIST = moment.utc().format('YYYY-MM-DD HH:mm A');
-    
+                const myDate = new Date()
+                const currentDateTimeIST = myDate.getTime() ;
+                console.log("curertnvendordate",currentDateTimeIST)
                 const newVendor = new vendorModel({
                     vendorMobile: mobileNumber,
                     vandorOtp: otpCode,
-                    vandorCreated: currentDateTimeIST,
+                    vandorCreated: currentDateTimeIST,  
                     subStartDate: currentDateIST,
                     subEndDate: futureDateIST
                 });
-    
+                console.log("employeelogin", newVendor)
                 await newVendor.save();
     
                 // Send OTP
@@ -382,9 +387,9 @@ import { sendOTP, sendEmployeeMsg }  from '../services/msgService.js';
                 if (user.status === 'inactive') {
                     return res.status(400).json({ message: 'Your account is currently inactive. Please contact the administrator' });
                 }
-    
-                const currentDateIST = moment.utc().startOf('day');
-                const subscriptionEndDate = moment(user.subEndDate).startOf('day');
+               const myDate = new Date();
+                const currentDateIST = myDate.getTime();
+                const subscriptionEndDate = user.subEndDate;
     
                 if (currentDateIST > subscriptionEndDate) {
                     return res.status(400).json({ message: 'Your subscription has expired. Please contact the administrator' });
@@ -1255,12 +1260,14 @@ console.log("checkOutRecord", checkOutRecord)
     
             // task count
             let query2 = { userId: userId, status: 1 };
-    
+        
             if (filterDate) {
-                const startDate = new Date(filterDate);
-                startDate.setUTCHours(0, 0, 0, 0); // Set to the start of the day
-                const endDate = new Date(filterDate);
-                endDate.setUTCHours(23, 59, 59, 999); // Set to the end of the day
+                const startDat = new Date(filterDate);
+                startDat.setUTCHours(0, 0, 0, 0); // Set to the start of the day
+                const startDate = startDat;
+                const endDat = new Date(filterDate);
+                endDat.setUTCHours(23, 59, 59, 999); // Set to the end of the day
+                const endDate = endDat; 
     
                 query.createdAt = {
                     $gte: startDate,
@@ -1326,8 +1333,8 @@ console.log("checkOutRecord", checkOutRecord)
                     if (taskData) {
                         const formattedTask = {
                             ...taskData.toObject(),
-                            taskDate: moment.utc(taskData.taskDate).format('YYYY-MM-DD HH:mm A'),
-                            taskEndDate: (taskData.taskEndDate != null && taskData.taskEndDate != '') ? moment.utc(taskData.taskEndDate).format('YYYY-MM-DD HH:mm A') : ''
+                            taskDate: moment(taskData.taskDate).valueOf(),
+                            taskEndDate: (taskData.taskEndDate != null && taskData.taskEndDate != '') ? moment(taskData.taskEndDate).valueOf : ''
                         };
     
                         mergedDetails.push(formattedTask);

@@ -40,13 +40,12 @@ const vendorSchema = new mongoose.Schema({
     },
 
     vandorCreated: {
-        type: String,
-        default: '',
+        type:Number,
+       required:true,
     },
 
     agoDate: {
-        type: String,
-        default: '',
+        type: Number
     },
 
     attendanceStatus: {
@@ -82,21 +81,21 @@ const vendorSchema = new mongoose.Schema({
         default: 'active',
     },
     subStartDate: {
-        type: String,
-        default: '',
+        type: Number,
+       required:true
       },
     subEndDate: {
-        type: String,
-        default: '',
+        type: Number,
+       required:true
     },
     subscriptions: [
         {
           startDate: {
-            type:String,
+            type:Number,
             required: true,
           },
           endDate: {
-            type: String,
+            type: Number,
             required: true,
           },
         },

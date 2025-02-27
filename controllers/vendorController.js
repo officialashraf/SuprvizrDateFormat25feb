@@ -60,9 +60,9 @@ const upload = multer({ storage }).single("profileImg");
             // Get the current date in Asia/Kolkata timezone, normalized to start of the day
          
 		const myDate = new Date();
-		const currentDateIST = moment.utc(myDate).startOf('day').format('YYYY-MM-DD');
+		const currentDateIST =myDate.getTime().startOf('day').format('YYYY-MM-DD');
 
-            const futureDateIST = moment.utc(myDate).startOf('day').add(15, 'days').format('YYYY-MM-DD');
+            const futureDateIST =myDate.getTime().startOf('day').add(15, 'days').format('YYYY-MM-DD');
 
             if (!vendor) {
                 // Check if the mobile number exists in either the vendor or employee model
@@ -77,7 +77,7 @@ const upload = multer({ storage }).single("profileImg");
                     return res.status(400).json({ message: 'Mobile number already exists in the employee panel' });
                 }
 
-                const currentDateTimeIST = moment.utc(myDate).format('YYYY-MM-DD HH:mm A');
+                const currentDateTimeIST = myDate.getTime()
 
                 // Create a new vendor with the mobile number and OTP
                 const newVendor = new vendorModel({
@@ -166,7 +166,7 @@ const upload = multer({ storage }).single("profileImg");
                     return res.status(400).json({ message: 'Your account is currently inactive. Please contact the administrator' });
                 }
 
-                const currentDateIST = moment.utc().startOf('day');
+                const currentDateIST = myDate.getTime().startOf('day');
                 const subscriptionEndDate = moment(storedOTP.subEndDate).startOf('day');
 
                 if (currentDateIST <= subscriptionEndDate) {
@@ -600,7 +600,7 @@ const upload = multer({ storage }).single("profileImg");
             vendor.vandorLong = long || vendor.vandorLong;
 
             await vendor.save();
-            const locationGet = await userService.getLocation(lat, long);
+            const locationGet = await getLocation(lat, long);
 
             const currentLocation ={
                 vendorId,
@@ -1037,8 +1037,8 @@ const upload = multer({ storage }).single("profileImg");
                     if (taskData) {
                         const formattedTask = {
                             ...taskData.toObject(),
-                            taskDate: moment.utc(taskData.taskDate).format('YYYY-MM-DD HH:mm A'),
-                            taskEndDate: (taskData.taskEndDate != null && taskData.taskEndDate != '') ? moment.utc(taskData.taskEndDate).format('YYYY-MM-DD HH:mm A') : ''
+                            taskDate: moment(taskData.taskDate).valueOf(),
+                            taskEndDate: (taskData.taskEndDate != null && taskData.taskEndDate != '') ? moment(taskData.taskEndDate).valueOf() : ''
                         };
                         mergedDetails.push(formattedTask);
                     }
@@ -1217,9 +1217,10 @@ const upload = multer({ storage }).single("profileImg");
 
             //
             const myDate = currentDate;
-            const currentDateIST = moment.utc(myDate);
-            const currentDate1 = currentDateIST.format('YYYY-MM-DD HH:mm A');
-            const createdAt = currentDateIST.format('YYYY-MM-DD');
+           
+            const currentDateIST = myDate.getTime();
+            const currentDate1 = currentDateIST;
+            const createdAt = currentDateIST;
 
             const locationGet = await getLocation(lat, long);
 
@@ -1295,9 +1296,9 @@ const upload = multer({ storage }).single("profileImg");
 
             //
             const myDate = new Date();
-            const currentDateIST = moment.utc(myDate);
-            const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
-            const createdAt = currentDateIST.format('YYYY-MM-DD');
+            const currentDateIST =myDate.getTime();
+            const currentDate = currentDateIST;
+            const createdAt = currentDateIST;
 
             const locationGet = await getLocation(lat, long);
 

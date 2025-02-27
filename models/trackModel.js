@@ -68,8 +68,8 @@ const trackSchema = new mongoose.Schema({
     },
 
     createdAt: {
-        type: String,
-        default: ' ',
+        type: Number,
+       required:true,
     },
 
 

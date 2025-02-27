@@ -114,8 +114,8 @@ const upload = multer({ storage }).single("clientDocument");
 
 
                 const myDate = new Date();
-                const currentDateIST = moment.utc(myDate);
-                const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
+                const currentDateIST = myDate.getTime();
+                const currentDate = currentDateIST;
 
 
                 const newClient = new clientModel({
@@ -428,7 +428,7 @@ export  const updateClients = async (req, res) => {
             }
 
             const { clientId, clientFullName, clientEmail, clientMobile, clientCompany, clientAddress, clientCity, clientState, clientCountry, clientZip, lat, long, vendorId, type } = req.body;
-
+console.log(req.body)
             if (!clientFullName || !clientMobile) {
                 return res.status(400).json({ error: 'Client name or mobile number is required!' });
             }
@@ -479,6 +479,7 @@ export  const updateClients = async (req, res) => {
                 createdByImg = existingvendor.empImg;
             } else if (type == 'employee') {
                 const existingemployee = await employeeModel.findOne({ _id: vendorId });
+                console.log("employee",existingemployee, vendorId)
                 if (!existingemployee) {
                     return res.status(404).json({ message: 'Employee not found' });
                 }
@@ -487,8 +488,8 @@ export  const updateClients = async (req, res) => {
             }
 
             const myDate = new Date();
-            const currentDateIST = moment.utc(myDate);
-            const currentDate = currentDateIST.format('YYYY-MM-DD HH:mm A');
+            const currentDateIST = myDate.getTime();
+            const currentDate = currentDateIST;
 
             // Update profile fields
             Client.clientFullName = clientFullName || Client.clientFullName;

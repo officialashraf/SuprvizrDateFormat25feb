@@ -18,7 +18,7 @@ import polyline  from '../models/polylineModel.js';
                 userType: type,
                 lat: lat,
                 long: long,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().getTime()
             });
     
             await newPolyline.save();
@@ -37,12 +37,12 @@ import polyline  from '../models/polylineModel.js';
 
         // Default to today's date in UTC if filterDate is not provided or is blank
         if (!filterDate) {
-            filterDate = moment().format('YYYY-MM-DD');
+            filterDate = getTime();
         }
 
         // Convert filterDate to start and end dates in UTC
-        const startDateUTC = moment.utc(filterDate).startOf('day').toDate();
-        const endDateUTC = moment.utc(filterDate).endOf('day').toDate();
+        const startDateUTC =filterDate.getTime().startOf('day').toDate();
+        const endDateUTC =filterDate.getTime().endOf('day').toDate();
 
         console.log("Start Date (UTC):", startDateUTC);
         console.log("End Date (UTC):", endDateUTC);
